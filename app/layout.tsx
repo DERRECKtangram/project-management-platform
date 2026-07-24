@@ -9,8 +9,8 @@ const notoSansTc = Noto_Sans_TC({
 });
 
 export const metadata: Metadata = {
-  title: "政府計畫案關卡管理平台",
-  description: "將提案、啟動、期中與期末結案轉成可追蹤的專案關卡工作台。",
+  title: "政府計畫案專案管理平台",
+  description: "以四大關流程管理政府計畫案的案件、任務、附件、會議與報告。",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
