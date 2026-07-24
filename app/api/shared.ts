@@ -1,14 +1,6 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../db";
 import * as schema from "../../db/schema";
-import {
-  actionItems as seedActionItems,
-  documents as seedDocuments,
-  gateSteps as seedGateSteps,
-  meetingRecords as seedMeetings,
-  members as seedMembers,
-  projects as seedProjects,
-} from "../data";
 
 function encode(value: unknown) {
   return JSON.stringify(value);
@@ -24,47 +16,7 @@ function decodeList(value: string) {
 }
 
 export async function ensureSeedData() {
-  const db = getDb();
-  const existing = await db.select({ code: schema.projects.code }).from(schema.projects).limit(1);
-
-  if (existing.length > 0) {
-    return db;
-  }
-
-  await db.insert(schema.members).values(
-    seedMembers.map((member) => ({
-      id: member.name,
-      ...member,
-    })),
-  );
-
-  await db.insert(schema.projects).values(
-    seedProjects.map((project) => ({
-      ...project,
-      developers: encode(project.developers),
-    })),
-  );
-
-  await db.insert(schema.gateSteps).values(
-    seedGateSteps.map((step) => ({
-      ...step,
-      id: `${step.gate}-${step.step}`,
-    })),
-  );
-
-  await db.insert(schema.documents).values(seedDocuments);
-
-  await db.insert(schema.meetingRecords).values(
-    seedMeetings.map((meeting) => ({
-      ...meeting,
-      attendees: encode(meeting.attendees),
-      decisions: encode(meeting.decisions),
-      risks: encode(meeting.risks),
-    })),
-  );
-
-  await db.insert(schema.actionItems).values(seedActionItems);
-  return db;
+  return getDb();
 }
 
 export async function getWorkspaceData() {

@@ -15,6 +15,13 @@
       "when": 1784891287790,
       "tag": "0001_far_the_liberteens",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784891430000,
+      "tag": "0002_clean_demo_projects",
+      "breakpoints": true
     }
   ]
 }

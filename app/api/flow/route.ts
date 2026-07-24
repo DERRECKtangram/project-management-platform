@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import * as schema from "../../../db/schema";
-import { projects as seedProjects } from "../../data";
 import { ensureSeedData, newId, routeError } from "../shared";
 
 const phases = ["提案", "啟動", "期中", "期末"];
@@ -38,60 +37,7 @@ function encodeDevelopers(value?: string) {
 
 async function ensureWorkflowSeed() {
   await ensureSeedData();
-  const db = getDb();
-  const existing = await db.select({ id: schema.workflowItems.id }).from(schema.workflowItems).limit(1);
-
-  if (existing.length > 0) {
-    return db;
-  }
-
-  const firstProject = seedProjects[0];
-  await db.insert(schema.workflowItems).values([
-    {
-      id: "WF-SEED-1",
-      projectCode: firstProject.code,
-      projectName: firstProject.name,
-      phase: "提案",
-      title: "確認成果範圍",
-      owner: firstProject.manager,
-      role: "專案管理人員",
-      content: "整理申請需求、成果範圍、工期與附件清單，讓研發知道本案方向。",
-      dueDate: "07/26",
-      status: "已完成",
-      documentUrl: "https://docs.google.com/",
-      completedAt: "07/24",
-    },
-    {
-      id: "WF-SEED-2",
-      projectCode: firstProject.code,
-      projectName: firstProject.name,
-      phase: "啟動",
-      title: "補齊設備需求規格",
-      owner: firstProject.developers[0] ?? "王柏翰",
-      role: "開發人員",
-      content: "研發需補設備規格、測試場域限制與預算估算，作為正式啟動條件。",
-      dueDate: "07/29",
-      status: "進行中",
-      documentUrl: "",
-      completedAt: "",
-    },
-    {
-      id: "WF-SEED-3",
-      projectCode: firstProject.code,
-      projectName: firstProject.name,
-      phase: "期中",
-      title: "上傳測試數據與截圖",
-      owner: firstProject.developers[1] ?? "張凱翔",
-      role: "開發人員",
-      content: "研發完成後打勾，並貼上測試數據或 Google Drive 連結。",
-      dueDate: "08/05",
-      status: "待處理",
-      documentUrl: "",
-      completedAt: "",
-    },
-  ]);
-
-  return db;
+  return getDb();
 }
 
 export async function GET() {

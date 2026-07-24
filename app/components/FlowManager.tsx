@@ -179,6 +179,13 @@ export function FlowManager() {
   return (
     <>
       <section className="flow-summary-grid">
+        {progressByProject.length === 0 ? (
+          <article className="flow-empty-card">
+            <span>尚未建立真實專案</span>
+            <h2>請先在下方建立第一個專案</h2>
+            <p>建立後就可以在提案、啟動、期中、期末四階段底下自由新增小關。</p>
+          </article>
+        ) : null}
         {progressByProject.map((project) => (
           <article className="flow-project-card" key={project.code}>
             <span>{project.code}</span>
