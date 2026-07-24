@@ -1025,6 +1025,67 @@ select {
   font-size: 14px;
 }
 
+.meeting-form-panel {
+  margin-bottom: 16px;
+}
+
+.form-message {
+  color: var(--blue);
+  font-size: 13px;
+  line-height: 1.45;
+  max-width: 360px;
+  text-align: right;
+}
+
+.meeting-form {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.meeting-form label {
+  color: var(--muted);
+  display: grid;
+  font-size: 13px;
+  font-weight: 900;
+  gap: 6px;
+}
+
+.meeting-form input,
+.meeting-form select,
+.meeting-form textarea,
+.editable-task-row select {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  min-height: 42px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.meeting-form textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.meeting-form .wide-field {
+  grid-column: span 2;
+}
+
+.meeting-form button {
+  align-self: end;
+}
+
+.primary-action:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.editable-task-row {
+  grid-template-columns: 58px minmax(0, 1fr) 92px 150px;
+}
+
 .role-card div {
   display: flex;
   flex-wrap: wrap;
@@ -1077,7 +1138,8 @@ select {
   .role-grid,
   .document-rules,
   .people-grid,
-  .meeting-columns {
+  .meeting-columns,
+  .meeting-form {
     grid-template-columns: 1fr;
   }
 
@@ -1122,6 +1184,14 @@ select {
 
   .meeting-record-card header {
     flex-direction: column;
+  }
+
+  .form-message {
+    text-align: left;
+  }
+
+  .meeting-form .wide-field {
+    grid-column: auto;
   }
 
   .panel {

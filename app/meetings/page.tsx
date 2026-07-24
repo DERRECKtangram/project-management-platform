@@ -1,5 +1,6 @@
 import { AppShell } from "../components/AppShell";
-import { actionItems, meetingRecords } from "../data";
+import { MeetingManager } from "../components/MeetingManager";
+import { actionItems, meetingRecords, projects } from "../data";
 
 export default function MeetingsPage() {
   return (
@@ -7,69 +8,13 @@ export default function MeetingsPage() {
       active="/meetings"
       eyebrow="會議紀錄"
       title="把每次會議轉成專案流程紀錄與後續任務"
-      actions={<button className="primary-action">新增會議紀錄</button>}
+      actions={<a className="secondary-action" href="/people">查看任務狀態</a>}
     >
-      <section className="meeting-records">
-        {meetingRecords.map((meeting) => {
-          const tasks = actionItems.filter((item) => item.sourceMeeting === meeting.title);
-          return (
-            <article className="meeting-record-card" key={meeting.id}>
-              <header>
-                <div>
-                  <span>{meeting.id} · {meeting.date}</span>
-                  <h2>{meeting.title}</h2>
-                  <p>{meeting.project}</p>
-                </div>
-                <strong>主持：{meeting.chair}</strong>
-              </header>
-
-              <div className="meeting-columns">
-                <section>
-                  <h3>參與人員</h3>
-                  <div className="tag-list">
-                    {meeting.attendees.map((person) => (
-                      <span key={person}>{person}</span>
-                    ))}
-                  </div>
-                </section>
-                <section>
-                  <h3>會議決議</h3>
-                  {meeting.decisions.map((decision) => (
-                    <p key={decision}>{decision}</p>
-                  ))}
-                </section>
-                <section>
-                  <h3>風險與卡點</h3>
-                  {meeting.risks.map((risk) => (
-                    <p key={risk}>{risk}</p>
-                  ))}
-                </section>
-              </div>
-
-              <section className="meeting-task-list">
-                <div className="section-title compact">
-                  <div>
-                    <p>會後任務</p>
-                    <h3>分派給負責人</h3>
-                  </div>
-                  <b>下次追蹤：{meeting.nextReview}</b>
-                </div>
-                {tasks.map((task) => (
-                  <div className="task-row" key={task.id}>
-                    <span>{task.id}</span>
-                    <div>
-                      <b>{task.title}</b>
-                      <small>{task.gate} · {task.role}</small>
-                    </div>
-                    <strong>{task.assignee}</strong>
-                    <em>{task.due}</em>
-                  </div>
-                ))}
-              </section>
-            </article>
-          );
-        })}
-      </section>
+      <MeetingManager
+        initialProjects={projects}
+        initialMeetings={meetingRecords}
+        initialTasks={actionItems}
+      />
 
       <section className="dashboard-grid">
         <article className="panel">
