@@ -6,9 +6,9 @@ export default function PeoplePage() {
   return (
     <AppShell
       active="/people"
-      eyebrow="人員任務"
-      title="依負責窗口整理每個人的小關、期限與文件缺口"
-      actions={<Link className="primary-action" href="/projects">新增小關</Link>}
+      eyebrow="研發填報"
+      title="只看自己負責的小關，完成後貼上成果連結"
+      actions={<Link className="secondary-action" href="/projects">回專案管理</Link>}
     >
       <PeopleWorkload />
     </AppShell>

@@ -6,12 +6,12 @@ export default function DashboardPage() {
   return (
     <AppShell
       active="/"
-      eyebrow="營運總覽"
-      title="讓計畫人員與研發人員看到同一條專案流程"
+      eyebrow="首頁"
+      title="選擇你今天要做的事"
       actions={
         <>
-          <Link className="primary-action" href="/projects">新增專案</Link>
-          <Link className="secondary-action" href="/meetings">查看會議</Link>
+          <Link className="primary-action" href="/projects">我要管理專案</Link>
+          <Link className="secondary-action" href="/people">我要填成果</Link>
         </>
       }
     >

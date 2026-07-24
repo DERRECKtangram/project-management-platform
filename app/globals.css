@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f4f7fb;
+  --bg: #f6f8fb;
   --panel: #ffffff;
   --ink: #101828;
   --text: #253246;
@@ -13,6 +13,10 @@
   --amber: #b45f00;
   --violet: #6b32a8;
   --red: #c01048;
+  --soft-blue: #eef6ff;
+  --soft-green: #edfdf4;
+  --soft-amber: #fff7e8;
+  --soft-violet: #f6f0ff;
 }
 
 @theme inline {
@@ -59,7 +63,7 @@ select {
 }
 
 .app-sidebar {
-  background: var(--nav);
+  background: linear-gradient(180deg, #10263a, #17324c);
   color: #dce6f2;
   display: grid;
   gap: 24px;
@@ -142,7 +146,7 @@ select {
 }
 
 .sidebar-summary {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   display: grid;
@@ -213,8 +217,8 @@ select {
 }
 
 .primary-action {
-  background: var(--nav);
-  border: 1px solid var(--nav);
+  background: #1f6feb;
+  border: 1px solid #1f6feb;
   color: #ffffff;
 }
 
@@ -786,11 +790,11 @@ select {
 }
 
 .manager-entry {
-  background: linear-gradient(135deg, #ffffff, #eef5ff);
+  background: linear-gradient(135deg, #ffffff, var(--soft-blue));
 }
 
 .developer-entry {
-  background: linear-gradient(135deg, #ffffff, #eefaf3);
+  background: linear-gradient(135deg, #ffffff, var(--soft-green));
 }
 
 .entry-card span {
@@ -1448,12 +1452,272 @@ select {
   padding: 7px 10px;
 }
 
+.home-actions {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.home-action-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-height: 230px;
+  padding: 24px;
+}
+
+.home-action-card span {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.home-action-card h2 {
+  color: var(--ink);
+  font-size: clamp(26px, 3vw, 38px);
+  font-weight: 900;
+  line-height: 1.18;
+  margin: 0;
+}
+
+.home-action-card p {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.home-action-card strong {
+  align-self: end;
+  border-radius: 8px;
+  display: inline-flex;
+  font-weight: 900;
+  justify-content: center;
+  max-width: 150px;
+  min-height: 42px;
+  padding: 10px 14px;
+}
+
+.pm-card {
+  background: linear-gradient(135deg, #ffffff 0%, var(--soft-blue) 100%);
+}
+
+.pm-card span,
+.pm-card strong {
+  color: #1f6feb;
+}
+
+.pm-card strong {
+  background: #dcebff;
+}
+
+.rd-card {
+  background: linear-gradient(135deg, #ffffff 0%, var(--soft-green) 100%);
+}
+
+.rd-card span,
+.rd-card strong {
+  color: var(--green);
+}
+
+.rd-card strong {
+  background: #d9fbe8;
+}
+
+.soft-metrics article:nth-child(1) {
+  background: var(--soft-blue);
+}
+
+.soft-metrics article:nth-child(2) {
+  background: var(--soft-amber);
+}
+
+.soft-metrics article:nth-child(3) {
+  background: var(--soft-green);
+}
+
+.soft-metrics article:nth-child(4) {
+  background: var(--soft-violet);
+}
+
+.rd-focus {
+  background: #f7fff9;
+}
+
+.rd-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.rd-toolbar p {
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 900;
+  margin: 0 0 6px;
+}
+
+.rd-toolbar h2 {
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 900;
+  margin: 0;
+}
+
+.rd-toolbar select {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  min-height: 44px;
+  min-width: 220px;
+  padding: 10px 12px;
+}
+
+.light-people-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.light-people-grid .person-card {
+  cursor: pointer;
+  text-align: left;
+}
+
+.selected-person {
+  border-color: #69d095;
+  box-shadow: 0 14px 34px rgba(8, 116, 67, 0.14);
+}
+
+.rd-board {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.rd-task-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(16, 24, 40, 0.05);
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.rd-task-card header {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.rd-task-card header span {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.rd-task-card header b {
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 5px 8px;
+}
+
+.rd-task-card h2 {
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.28;
+  margin: 0;
+}
+
+.rd-task-card p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.rd-task-card dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.rd-task-card dl div {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 58px minmax(0, 1fr);
+}
+
+.rd-task-card dt,
+.rd-task-card label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.rd-task-card dd {
+  color: var(--ink);
+  font-size: 13px;
+  margin: 0;
+}
+
+.rd-task-card input {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  margin-top: 6px;
+  min-height: 40px;
+  padding: 9px 10px;
+  width: 100%;
+}
+
+.rd-actions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rd-actions button {
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.phase-proposal {
+  background: var(--soft-amber);
+}
+
+.phase-launch {
+  background: var(--soft-blue);
+}
+
+.phase-midterm {
+  background: var(--soft-violet);
+}
+
+.phase-close {
+  background: var(--soft-green);
+}
+
+.phase-proposal .flow-item,
+.phase-launch .flow-item,
+.phase-midterm .flow-item,
+.phase-close .flow-item {
+  background: rgba(255, 255, 255, 0.82);
+}
+
 @media (max-width: 1180px) {
   .metric-grid,
   .report-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .home-actions,
   .dashboard-grid,
   .project-hero,
   .project-board,
@@ -1465,6 +1729,8 @@ select {
   .meeting-columns,
   .flow-summary-grid,
   .flow-board,
+  .rd-board,
+  .light-people-grid,
   .meeting-form {
     grid-template-columns: 1fr;
   }
@@ -1490,6 +1756,7 @@ select {
 
   .page-header,
   .page-actions,
+  .rd-toolbar,
   .gate-step-card footer {
     align-items: stretch;
     flex-direction: column;

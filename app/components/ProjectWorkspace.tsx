@@ -19,6 +19,13 @@ function statusClass(status: string) {
   return "waiting";
 }
 
+function phaseClass(phase: string) {
+  if (phase === "提案") return "phase-proposal";
+  if (phase === "啟動") return "phase-launch";
+  if (phase === "期中") return "phase-midterm";
+  return "phase-close";
+}
+
 export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
   const { data, loading, message, setMessage, refresh } = useFlowData();
   const [phase, setPhase] = useState("提案");
@@ -171,7 +178,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
         {data.phases.map((itemPhase) => {
           const phaseItems = items.filter((item) => item.phase === itemPhase);
           return (
-            <article className="flow-phase" key={itemPhase}>
+            <article className={`flow-phase ${phaseClass(itemPhase)}`} key={itemPhase}>
               <header>
                 <span>{itemPhase}</span>
                 <strong>{phaseItems.filter((item) => item.status === "已完成").length}/{phaseItems.length}</strong>

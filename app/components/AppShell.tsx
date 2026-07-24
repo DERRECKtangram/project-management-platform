@@ -2,11 +2,11 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 const navItems = [
-  { href: "/", label: "總覽", icon: "總" },
-  { href: "/projects", label: "專案", icon: "案" },
-  { href: "/people", label: "人員任務", icon: "人" },
-  { href: "/meetings", label: "會議", icon: "會" },
-  { href: "/reports", label: "報告", icon: "報" },
+  { href: "/", label: "首頁", icon: "首" },
+  { href: "/projects", label: "專案管理", icon: "管" },
+  { href: "/people", label: "研發填報", icon: "研" },
+  { href: "/meetings", label: "會議紀錄", icon: "會" },
+  { href: "/reports", label: "進度報告", icon: "報" },
   { href: "/settings", label: "設定", icon: "設" },
 ];
 
@@ -26,7 +26,7 @@ export function AppShell({ active, title, eyebrow, actions, children }: AppShell
           <span className="brand-mark">PM</span>
           <span>
             <small>政府計畫案</small>
-            <strong>專案管理平台</strong>
+            <strong>輕量專案平台</strong>
           </span>
         </Link>
 
@@ -40,9 +40,9 @@ export function AppShell({ active, title, eyebrow, actions, children }: AppShell
         </nav>
 
         <section className="sidebar-summary">
-          <span>流程核心</span>
-          <strong>專案 → 四階段 → 小關</strong>
-          <p>每個小關都要有窗口、內容方向、截止日、完成狀態與文件連結，讓計畫人員和研發人員對齊。</p>
+          <span>使用方式</span>
+          <strong>PM 建小關，研發填成果</strong>
+          <p>管理者負責拆流程、指定窗口與期限；研發只看自己要填的內容，完成後補上文件連結。</p>
         </section>
       </aside>
 
