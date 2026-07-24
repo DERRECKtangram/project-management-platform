@@ -8,7 +8,7 @@ export default function GatesPage() {
     <AppShell
       active="/gates"
       eyebrow="四大關任務"
-      title="從提案到結案的關卡檢核"
+      title="從提案到結案，每一關都要有負責人"
       actions={<button className="secondary-action">編輯關卡規則</button>}
     >
       <section className="gate-lanes">
@@ -35,8 +35,8 @@ export default function GatesPage() {
                         <dd>{step.condition}</dd>
                       </div>
                       <div>
-                        <dt>好處</dt>
-                        <dd>{step.benefit}</dd>
+                        <dt>角色</dt>
+                        <dd>{step.owner} · 負責人：{step.assignee}</dd>
                       </div>
                       <div>
                         <dt>下一步</dt>
@@ -44,7 +44,7 @@ export default function GatesPage() {
                       </div>
                     </dl>
                     <footer>
-                      <span>負責：{step.owner}</span>
+                      <span>{step.benefit}</span>
                       <b className={`status-badge ${step.status}`}>{statusText[step.status]}</b>
                     </footer>
                   </div>

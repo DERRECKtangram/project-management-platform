@@ -1,40 +1,88 @@
 import { AppShell } from "../components/AppShell";
-import { meetings } from "../data";
+import { actionItems, meetingRecords } from "../data";
 
 export default function MeetingsPage() {
   return (
     <AppShell
       active="/meetings"
-      eyebrow="會議追蹤"
-      title="決策、附件確認與委員問題管理"
-      actions={<button className="primary-action">新增會議</button>}
+      eyebrow="會議紀錄"
+      title="把每次會議轉成專案流程紀錄與後續任務"
+      actions={<button className="primary-action">新增會議紀錄</button>}
     >
-      <section className="meeting-list">
-        {meetings.map((meeting) => (
-          <article className="meeting-card" key={meeting.title}>
-            <time>{meeting.date}</time>
-            <div>
-              <h2>{meeting.title}</h2>
-              <p>{meeting.project}</p>
-            </div>
-            <span>{meeting.owner}</span>
-            <strong>{meeting.outcome}</strong>
-          </article>
-        ))}
+      <section className="meeting-records">
+        {meetingRecords.map((meeting) => {
+          const tasks = actionItems.filter((item) => item.sourceMeeting === meeting.title);
+          return (
+            <article className="meeting-record-card" key={meeting.id}>
+              <header>
+                <div>
+                  <span>{meeting.id} · {meeting.date}</span>
+                  <h2>{meeting.title}</h2>
+                  <p>{meeting.project}</p>
+                </div>
+                <strong>主持：{meeting.chair}</strong>
+              </header>
+
+              <div className="meeting-columns">
+                <section>
+                  <h3>參與人員</h3>
+                  <div className="tag-list">
+                    {meeting.attendees.map((person) => (
+                      <span key={person}>{person}</span>
+                    ))}
+                  </div>
+                </section>
+                <section>
+                  <h3>會議決議</h3>
+                  {meeting.decisions.map((decision) => (
+                    <p key={decision}>{decision}</p>
+                  ))}
+                </section>
+                <section>
+                  <h3>風險與卡點</h3>
+                  {meeting.risks.map((risk) => (
+                    <p key={risk}>{risk}</p>
+                  ))}
+                </section>
+              </div>
+
+              <section className="meeting-task-list">
+                <div className="section-title compact">
+                  <div>
+                    <p>會後任務</p>
+                    <h3>分派給負責人</h3>
+                  </div>
+                  <b>下次追蹤：{meeting.nextReview}</b>
+                </div>
+                {tasks.map((task) => (
+                  <div className="task-row" key={task.id}>
+                    <span>{task.id}</span>
+                    <div>
+                      <b>{task.title}</b>
+                      <small>{task.gate} · {task.role}</small>
+                    </div>
+                    <strong>{task.assignee}</strong>
+                    <em>{task.due}</em>
+                  </div>
+                ))}
+              </section>
+            </article>
+          );
+        })}
       </section>
 
       <section className="dashboard-grid">
         <article className="panel">
           <div className="section-title compact">
             <div>
-              <p>會議模板</p>
-              <h2>每次會議固定留下</h2>
+              <p>會議紀錄格式</p>
+              <h2>每次會後固定留下</h2>
             </div>
           </div>
-          {["決議事項", "待補附件", "責任人", "完成日期", "是否影響關卡"].map((item) => (
+          {["決議事項", "風險與卡點", "責任人", "完成日期", "下次追蹤時間", "影響哪一關"].map((item) => (
             <div className="list-item" key={item}>
               <b>{item}</b>
-              <small>納入小關任務清單，不獨立散落在會議紀錄裡。</small>
+              <small>會議結束後直接轉入任務清單，讓專案管理人員與開發人員都知道下一步。</small>
             </div>
           ))}
         </article>
@@ -42,12 +90,12 @@ export default function MeetingsPage() {
         <article className="panel">
           <div className="section-title compact">
             <div>
-              <p>協作規則</p>
-              <h2>避免獨立設關</h2>
+              <p>管理原則</p>
+              <h2>會議不是單純存檔</h2>
             </div>
           </div>
           <p className="plain-copy">
-            會議、附件、資料確認、委員提問與一般協作都統一放入各小關任務清單。平台不另外產生孤立流程，避免同一件事被追兩次。
+            會議紀錄必須連到案件、關卡、附件與負責人。平台的重點是把會議內容變成可追蹤的下一步，而不是只留下文字紀錄。
           </p>
         </article>
       </section>

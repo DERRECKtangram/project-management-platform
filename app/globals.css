@@ -769,6 +769,262 @@ select {
   margin-bottom: 16px;
 }
 
+.role-entry-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.entry-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  min-height: 170px;
+  padding: 20px;
+}
+
+.manager-entry {
+  background: linear-gradient(135deg, #ffffff, #eef5ff);
+}
+
+.developer-entry {
+  background: linear-gradient(135deg, #ffffff, #eefaf3);
+}
+
+.entry-card span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.entry-card h2 {
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.entry-card p {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.entry-card strong {
+  color: var(--nav);
+  font-size: 16px;
+}
+
+.people-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.person-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.person-avatar {
+  align-items: center;
+  background: var(--nav);
+  border-radius: 8px;
+  color: #ffffff;
+  display: grid;
+  font-size: 22px;
+  font-weight: 900;
+  height: 46px;
+  place-items: center;
+  width: 46px;
+}
+
+.person-card span {
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.person-card h2 {
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 900;
+  margin: 3px 0;
+}
+
+.person-card p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.person-card footer {
+  align-items: center;
+  border-top: 1px solid #e8edf4;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 12px;
+}
+
+.person-card footer b,
+.person-card footer strong {
+  font-size: 13px;
+}
+
+.person-card footer b {
+  color: var(--ink);
+}
+
+.person-card footer strong {
+  color: var(--red);
+}
+
+.task-row {
+  align-items: center;
+  border-top: 1px solid #e8edf4;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 58px minmax(0, 1fr) 92px 74px;
+  padding: 13px 0;
+}
+
+.task-row > span {
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.task-row b {
+  color: var(--ink);
+  display: block;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.task-row small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.task-row strong,
+.task-row em {
+  color: var(--ink);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.meeting-records {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.meeting-record-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.meeting-record-card header {
+  align-items: flex-start;
+  border-bottom: 1px solid #e8edf4;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding-bottom: 14px;
+}
+
+.meeting-record-card header span {
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.meeting-record-card h2 {
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 900;
+  margin: 5px 0;
+}
+
+.meeting-record-card header p,
+.meeting-record-card section p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.meeting-record-card header strong {
+  color: var(--ink);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.meeting-columns {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 0.8fr 1.2fr 1fr;
+  padding: 16px 0;
+}
+
+.meeting-columns section {
+  background: #f7f9fc;
+  border: 1px solid #e8edf4;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.meeting-columns h3,
+.meeting-task-list h3 {
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 900;
+  margin: 0 0 10px;
+}
+
+.meeting-columns p + p {
+  margin-top: 8px;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-list span {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--nav);
+  font-size: 12px;
+  font-weight: 900;
+  padding: 6px 9px;
+}
+
+.meeting-task-list {
+  border-top: 1px solid #e8edf4;
+  padding-top: 14px;
+}
+
+.meeting-task-list .section-title b {
+  color: var(--blue);
+  font-size: 14px;
+}
+
 .role-card div {
   display: flex;
   flex-wrap: wrap;
@@ -817,8 +1073,11 @@ select {
   .dashboard-grid,
   .project-board,
   .gate-lanes,
+  .role-entry-grid,
   .role-grid,
-  .document-rules {
+  .document-rules,
+  .people-grid,
+  .meeting-columns {
     grid-template-columns: 1fr;
   }
 
@@ -855,9 +1114,14 @@ select {
   }
 
   .table-row,
-  .meeting-card {
+  .meeting-card,
+  .task-row {
     align-items: start;
     grid-template-columns: 1fr;
+  }
+
+  .meeting-record-card header {
+    flex-direction: column;
   }
 
   .panel {

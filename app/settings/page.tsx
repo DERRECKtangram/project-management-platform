@@ -2,27 +2,28 @@ import { AppShell } from "../components/AppShell";
 
 const roles = [
   {
-    name: "專案部門",
-    duty: "統整推進、會議、附件、資料確認與跨部門追蹤。",
-    permissions: ["建立案件", "管理關卡", "彙整報告"],
+    name: "專案管理人員",
+    duty: "建立案件、安排會議、把決議轉成任務、追蹤附件與跨部門進度。",
+    permissions: ["建立案件", "新增會議紀錄", "分派任務", "彙整報告"],
   },
   {
-    name: "RD / FAE",
-    duty: "提供技術內容、成果、測試數據、照片截圖與改善回覆。",
-    permissions: ["更新任務", "上傳佐證", "回覆缺口"],
+    name: "開發人員",
+    duty: "接收被分派的技術任務，回報成果、測試數據、截圖、設備需求與委員問題回覆。",
+    permissions: ["更新任務", "上傳佐證", "回覆缺口", "確認技術成果"],
   },
   {
     name: "管理層",
-    duty: "確認方向、資源、預算、重大風險與送審決策。",
-    permissions: ["核准關卡", "解除風險", "封存版本"],
+    duty: "確認方向、資源、預算、重大風險與關卡是否可進入下一步。",
+    permissions: ["核准關卡", "解除風險", "確認資源", "封存版本"],
   },
 ];
 
 const rules = [
+  "每次會議紀錄必須連到案件、關卡、負責人與下次追蹤日期。",
+  "會議決議不能只留文字，必須轉成至少一項任務或明確標示無後續行動。",
+  "開發人員只需要看到自己被分派的任務、期限、需交付成果與相關附件。",
+  "專案管理人員需要看到所有卡點、逾期項、附件缺口與誰正在處理。",
   "只有完成當關主要任務與完成條件，才能進入下一關。",
-  "期中不得使用退回修改狀態；部分成果未完成不阻止提交，但必須留下原因、改善安排與委員意見。",
-  "期末不得使用退回修改；後續列為補充資料、改善事項或結案附件。",
-  "會議、附件、資料確認、委員提問與一般協作統一放入小關任務清單。",
 ];
 
 export default function SettingsPage() {
@@ -30,7 +31,7 @@ export default function SettingsPage() {
     <AppShell
       active="/settings"
       eyebrow="角色與規則"
-      title="平台權責與通關規則"
+      title="讓不同人進入後看到不同責任"
       actions={<button className="secondary-action">調整設定</button>}
     >
       <section className="role-grid">
@@ -50,8 +51,8 @@ export default function SettingsPage() {
       <section className="panel">
         <div className="section-title compact">
           <div>
-            <p>通關規則</p>
-            <h2>避免流程失控的底線</h2>
+            <p>流程規則</p>
+            <h2>避免會議後沒有人知道下一步</h2>
           </div>
         </div>
         {rules.map((rule, index) => (

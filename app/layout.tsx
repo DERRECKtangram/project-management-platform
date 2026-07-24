@@ -10,7 +10,7 @@ const notoSansTc = Noto_Sans_TC({
 
 export const metadata: Metadata = {
   title: "政府計畫案專案管理平台",
-  description: "以四大關流程管理政府計畫案的案件、任務、附件、會議與報告。",
+  description: "讓專案管理人員與開發人員透過會議紀錄、任務分派與四大關流程共同推進政府計畫案。",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

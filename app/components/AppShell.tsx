@@ -4,9 +4,10 @@ import type { ReactNode } from "react";
 const navItems = [
   { href: "/", label: "總覽", icon: "總" },
   { href: "/projects", label: "案件管理", icon: "案" },
+  { href: "/people", label: "人員與任務", icon: "人" },
   { href: "/gates", label: "四大關任務", icon: "關" },
   { href: "/documents", label: "附件資料庫", icon: "檔" },
-  { href: "/meetings", label: "會議追蹤", icon: "會" },
+  { href: "/meetings", label: "會議紀錄", icon: "會" },
   { href: "/reports", label: "報告中心", icon: "報" },
   { href: "/settings", label: "角色與規則", icon: "設" },
 ];
@@ -41,9 +42,9 @@ export function AppShell({ active, title, eyebrow, actions, children }: AppShell
         </nav>
 
         <section className="sidebar-summary">
-          <span>今日管理重點</span>
-          <strong>2 項風險缺口</strong>
-          <p>啟動資源與期中佐證需要先處理，避免送審前補件。</p>
+          <span>角色入口</span>
+          <strong>PM 管流程，開發管交付</strong>
+          <p>會議後的決議會轉成指定負責人的任務，所有人回來看自己的待辦與下一步。</p>
         </section>
       </aside>
 

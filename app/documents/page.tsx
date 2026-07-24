@@ -6,7 +6,7 @@ export default function DocumentsPage() {
     <AppShell
       active="/documents"
       eyebrow="附件資料庫"
-      title="送審、期中與結案附件控管"
+      title="每份附件都要知道誰負責、卡在哪一關"
       actions={<button className="primary-action">上傳附件</button>}
     >
       <section className="toolbar">
@@ -44,16 +44,16 @@ export default function DocumentsPage() {
 
       <section className="document-rules">
         <article>
-          <h2>送件前</h2>
+          <h2>開會後</h2>
+          <p>會議決議如果提到附件、數據或截圖，必須立刻建立負責人與期限。</p>
+        </article>
+        <article>
+          <h2>送審前</h2>
           <p>計畫書、成果範圍、工期資源、預算與附件清單都要有正式版本。</p>
         </article>
         <article>
-          <h2>期中前</h2>
-          <p>平時累積照片、截圖、測試數據與缺口原因，不等審查前才補。</p>
-        </article>
-        <article>
           <h2>結案前</h2>
-          <p>成果、KPI、委員回覆、經費附件與歷史紀錄要封存並禁止隨意修改。</p>
+          <p>成果、KPI、委員回覆、經費附件與歷史紀錄要封存，避免日後查核找不到依據。</p>
         </article>
       </section>
     </AppShell>

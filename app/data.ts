@@ -1,16 +1,28 @@
 export type GateStatus = "done" | "active" | "risk" | "waiting";
+export type RiskLevel = "低" | "中" | "高";
+export type RoleType = "專案管理人員" | "開發人員" | "管理層";
 
 export type Project = {
   code: string;
   name: string;
   agency: string;
-  owner: string;
+  manager: string;
+  developers: string[];
   stage: string;
   progress: number;
-  risk: "低" | "中" | "高";
+  risk: RiskLevel;
   due: string;
   budget: string;
   nextAction: string;
+};
+
+export type Member = {
+  name: string;
+  role: RoleType;
+  team: string;
+  focus: string;
+  assigned: number;
+  overdue: number;
 };
 
 export type GateStep = {
@@ -23,6 +35,7 @@ export type GateStep = {
   benefit: string;
   next: string;
   owner: string;
+  assignee: string;
   status: GateStatus;
 };
 
@@ -35,6 +48,30 @@ export type DocumentItem = {
   updated: string;
 };
 
+export type ActionItem = {
+  id: string;
+  project: string;
+  title: string;
+  assignee: string;
+  role: RoleType;
+  sourceMeeting: string;
+  due: string;
+  status: "待處理" | "進行中" | "待確認" | "已完成";
+  gate: string;
+};
+
+export type MeetingRecord = {
+  id: string;
+  title: string;
+  project: string;
+  date: string;
+  chair: string;
+  attendees: string[];
+  decisions: string[];
+  risks: string[];
+  nextReview: string;
+};
+
 export const statusText: Record<GateStatus, string> = {
   done: "已完成",
   active: "進行中",
@@ -42,12 +79,56 @@ export const statusText: Record<GateStatus, string> = {
   waiting: "待啟動",
 };
 
+export const members: Member[] = [
+  {
+    name: "林怡君",
+    role: "專案管理人員",
+    team: "專案部門",
+    focus: "案件排程、會議紀錄、附件追蹤與跨部門協調",
+    assigned: 8,
+    overdue: 1,
+  },
+  {
+    name: "王柏翰",
+    role: "開發人員",
+    team: "RD / FAE",
+    focus: "技術成果、測試數據、截圖與委員問題回覆",
+    assigned: 5,
+    overdue: 0,
+  },
+  {
+    name: "張凱翔",
+    role: "開發人員",
+    team: "RD / FAE",
+    focus: "資料串接、KPI 數據整理與結案技術佐證",
+    assigned: 4,
+    overdue: 1,
+  },
+  {
+    name: "陳品妤",
+    role: "專案管理人員",
+    team: "專案部門",
+    focus: "提案內容、送件版本、預算與附件清單",
+    assigned: 6,
+    overdue: 0,
+  },
+  {
+    name: "黃總監",
+    role: "管理層",
+    team: "管理層",
+    focus: "方向確認、資源決策、風險解除與封存核准",
+    assigned: 3,
+    overdue: 0,
+  },
+];
+
 export const projects: Project[] = [
   {
     code: "GA-2026-014",
     name: "智慧空壓節能監測計畫",
     agency: "經濟部示範補助",
-    owner: "林怡君",
+    manager: "林怡君",
+    developers: ["王柏翰", "張凱翔"],
     stage: "第二大關：核定與正式啟動",
     progress: 47,
     risk: "高",
@@ -59,7 +140,8 @@ export const projects: Project[] = [
     code: "GA-2026-019",
     name: "AI 品檢資料整合平台",
     agency: "產業升級專案",
-    owner: "王柏翰",
+    manager: "林怡君",
+    developers: ["王柏翰"],
     stage: "第三大關：期中成果與審查",
     progress: 72,
     risk: "中",
@@ -71,7 +153,8 @@ export const projects: Project[] = [
     code: "GA-2026-006",
     name: "低碳製程導入輔導案",
     agency: "地方型 SBIR",
-    owner: "陳品妤",
+    manager: "陳品妤",
+    developers: ["張凱翔"],
     stage: "第一大關：提案與方向確認",
     progress: 28,
     risk: "低",
@@ -83,7 +166,8 @@ export const projects: Project[] = [
     code: "GA-2025-031",
     name: "智慧維運資料可視化計畫",
     agency: "數位轉型補助",
-    owner: "張凱翔",
+    manager: "陳品妤",
+    developers: ["張凱翔"],
     stage: "第四大關：期末成果與結案",
     progress: 91,
     risk: "中",
@@ -104,6 +188,7 @@ export const gateSteps: GateStep[] = [
     benefit: "避免臨時加功能與反覆修改需求。",
     next: "確認工期與資源",
     owner: "專案部門",
+    assignee: "陳品妤",
     status: "done",
   },
   {
@@ -116,6 +201,7 @@ export const gateSteps: GateStep[] = [
     benefit: "避免開始後才發現來不及或缺人缺設備。",
     next: "只允許可執行案件進下一關",
     owner: "RD / FAE",
+    assignee: "張凱翔",
     status: "active",
   },
   {
@@ -128,6 +214,7 @@ export const gateSteps: GateStep[] = [
     benefit: "減少補件、版本混亂與重複說明。",
     next: "送出正式版本",
     owner: "管理層",
+    assignee: "黃總監",
     status: "waiting",
   },
   {
@@ -140,6 +227,7 @@ export const gateSteps: GateStep[] = [
     benefit: "避免用錯版本開始執行。",
     next: "建立任務與責任",
     owner: "專案部門",
+    assignee: "林怡君",
     status: "done",
   },
   {
@@ -151,7 +239,8 @@ export const gateSteps: GateStep[] = [
     condition: "每項工作皆有人、有期限、有明確成果。",
     benefit: "避免事情卡住時沒有人負責。",
     next: "查看任務地圖",
-    owner: "專案經理",
+    owner: "專案管理人員",
+    assignee: "林怡君",
     status: "active",
   },
   {
@@ -164,6 +253,7 @@ export const gateSteps: GateStep[] = [
     benefit: "避免宣布啟動後仍在等待資源。",
     next: "開始執行",
     owner: "管理層",
+    assignee: "黃總監",
     status: "risk",
   },
   {
@@ -175,7 +265,8 @@ export const gateSteps: GateStep[] = [
     condition: "已完成工作皆有成果證明，卡點有等待對象。",
     benefit: "期中前不用重新找資料或重寫內容。",
     next: "確認缺口與風險",
-    owner: "RD / FAE",
+    owner: "開發人員",
+    assignee: "王柏翰",
     status: "active",
   },
   {
@@ -187,7 +278,8 @@ export const gateSteps: GateStep[] = [
     condition: "每個缺口有負責人、處理方式與完成時間。",
     benefit: "提前發現缺少照片、數據或測試資料。",
     next: "處理期中缺口",
-    owner: "專案經理",
+    owner: "專案管理人員",
+    assignee: "林怡君",
     status: "risk",
   },
   {
@@ -200,6 +292,7 @@ export const gateSteps: GateStep[] = [
     benefit: "直接用平時成果完成報告。",
     next: "提交期中報告",
     owner: "專案部門",
+    assignee: "林怡君",
     status: "waiting",
   },
   {
@@ -211,7 +304,8 @@ export const gateSteps: GateStep[] = [
     condition: "必要成果完成或有合理說明，改善事項已安排結果。",
     benefit: "避免期末審查前大量補件。",
     next: "更新最終成果",
-    owner: "RD / FAE",
+    owner: "開發人員",
+    assignee: "張凱翔",
     status: "waiting",
   },
   {
@@ -224,6 +318,7 @@ export const gateSteps: GateStep[] = [
     benefit: "避免最後找不到佐證。",
     next: "補齊結案資料",
     owner: "專案部門",
+    assignee: "陳品妤",
     status: "waiting",
   },
   {
@@ -236,6 +331,7 @@ export const gateSteps: GateStep[] = [
     benefit: "保留工作證明，方便查核與延伸申請。",
     next: "完成結案並封存",
     owner: "管理層",
+    assignee: "黃總監",
     status: "waiting",
   },
 ];
@@ -246,7 +342,7 @@ export const documents: DocumentItem[] = [
     project: "智慧空壓節能監測計畫",
     gate: "第二大關",
     status: "已收齊",
-    owner: "專案部門",
+    owner: "林怡君",
     updated: "07/23",
   },
   {
@@ -254,7 +350,7 @@ export const documents: DocumentItem[] = [
     project: "智慧空壓節能監測計畫",
     gate: "第二大關",
     status: "需補件",
-    owner: "管理層",
+    owner: "黃總監",
     updated: "07/24",
   },
   {
@@ -262,7 +358,7 @@ export const documents: DocumentItem[] = [
     project: "AI 品檢資料整合平台",
     gate: "第三大關",
     status: "待確認",
-    owner: "RD / FAE",
+    owner: "王柏翰",
     updated: "07/22",
   },
   {
@@ -270,31 +366,109 @@ export const documents: DocumentItem[] = [
     project: "智慧維運資料可視化計畫",
     gate: "第四大關",
     status: "待上傳",
-    owner: "專案部門",
+    owner: "張凱翔",
     updated: "07/21",
   },
 ];
 
-export const meetings = [
+export const meetingRecords: MeetingRecord[] = [
   {
+    id: "MT-0725",
     title: "啟動前資源決策會",
     project: "智慧空壓節能監測計畫",
     date: "07/25 10:00",
-    owner: "管理層",
-    outcome: "決定採購窗口、測試場域與預算追加。",
+    chair: "林怡君",
+    attendees: ["林怡君", "王柏翰", "張凱翔", "黃總監"],
+    decisions: ["採購窗口由管理層今日確認", "測試場域需在 3 天內完成可用性確認", "RD 需補完整設備需求規格"],
+    risks: ["若設備採購延後，第二大關無法轉入正式執行"],
+    nextReview: "07/28 16:00",
   },
   {
+    id: "MT-0726",
     title: "期中缺口盤點",
     project: "AI 品檢資料整合平台",
     date: "07/26 14:30",
-    owner: "專案經理",
-    outcome: "確認 3 天內需補數據與委員問題回覆。",
+    chair: "林怡君",
+    attendees: ["林怡君", "王柏翰", "黃總監"],
+    decisions: ["模型測試數據改由王柏翰統一上傳", "委員問題回覆先用條列版，送出前由專案管理人員整併"],
+    risks: ["若測試數據未附來源，期中報告可能被要求補件"],
+    nextReview: "07/30 11:00",
   },
   {
+    id: "MT-0729",
     title: "結案封存檢查",
     project: "智慧維運資料可視化計畫",
     date: "07/29 16:00",
-    owner: "專案部門",
-    outcome: "檢查成果、KPI、經費附件與歷史紀錄。",
+    chair: "陳品妤",
+    attendees: ["陳品妤", "張凱翔", "黃總監"],
+    decisions: ["結案附件依成果、KPI、經費、委員回覆四類封存", "封存後僅管理層可核准修改"],
+    risks: ["KPI 佐證若缺截圖，結案資料會被退補"],
+    nextReview: "08/02 15:00",
   },
 ];
+
+export const actionItems: ActionItem[] = [
+  {
+    id: "A-101",
+    project: "智慧空壓節能監測計畫",
+    title: "補齊設備需求規格與預算估算",
+    assignee: "王柏翰",
+    role: "開發人員",
+    sourceMeeting: "啟動前資源決策會",
+    due: "07/27",
+    status: "進行中",
+    gate: "第二大關",
+  },
+  {
+    id: "A-102",
+    project: "智慧空壓節能監測計畫",
+    title: "確認採購窗口與測試場域可用日期",
+    assignee: "黃總監",
+    role: "管理層",
+    sourceMeeting: "啟動前資源決策會",
+    due: "07/25",
+    status: "待處理",
+    gate: "第二大關",
+  },
+  {
+    id: "A-103",
+    project: "AI 品檢資料整合平台",
+    title: "上傳模型測試數據與截圖佐證",
+    assignee: "王柏翰",
+    role: "開發人員",
+    sourceMeeting: "期中缺口盤點",
+    due: "07/29",
+    status: "待確認",
+    gate: "第三大關",
+  },
+  {
+    id: "A-104",
+    project: "AI 品檢資料整合平台",
+    title: "彙整委員問題回覆成期中報告附件",
+    assignee: "林怡君",
+    role: "專案管理人員",
+    sourceMeeting: "期中缺口盤點",
+    due: "07/30",
+    status: "進行中",
+    gate: "第三大關",
+  },
+  {
+    id: "A-105",
+    project: "智慧維運資料可視化計畫",
+    title: "補齊 KPI 截圖與最終測試報告",
+    assignee: "張凱翔",
+    role: "開發人員",
+    sourceMeeting: "結案封存檢查",
+    due: "08/01",
+    status: "待處理",
+    gate: "第四大關",
+  },
+];
+
+export const meetings = meetingRecords.map((meeting) => ({
+  title: meeting.title,
+  project: meeting.project,
+  date: meeting.date,
+  owner: meeting.chair,
+  outcome: meeting.decisions[0],
+}));

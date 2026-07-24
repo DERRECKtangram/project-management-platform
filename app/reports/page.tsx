@@ -1,5 +1,5 @@
 import { AppShell } from "../components/AppShell";
-import { projects } from "../data";
+import { actionItems, meetingRecords, projects } from "../data";
 
 const reports = [
   {
@@ -17,13 +17,13 @@ const reports = [
   {
     name: "期中成果報告",
     gate: "第三大關",
-    scope: "進度、成果附件、缺口原因與委員意見",
+    scope: "進度、成果附件、缺口原因、會議決議與委員意見",
     status: "草稿中",
   },
   {
     name: "結案封存包",
     gate: "第四大關",
-    scope: "成果、KPI、經費附件、回覆紀錄與版本封存",
+    scope: "成果、KPI、經費附件、會議紀錄、回覆紀錄與版本封存",
     status: "待啟動",
   },
 ];
@@ -33,7 +33,7 @@ export default function ReportsPage() {
     <AppShell
       active="/reports"
       eyebrow="報告中心"
-      title="依關卡自動彙整送審資料"
+      title="依案件、關卡與會議紀錄自動彙整"
       actions={<button className="primary-action">產生報告</button>}
     >
       <section className="report-grid">
@@ -58,17 +58,21 @@ export default function ReportsPage() {
           </div>
         </div>
         <div className="project-table">
-          {projects.map((project) => (
-            <div className="table-row" key={project.code}>
-              <div>
-                <b>{project.name}</b>
-                <span>{project.stage}</span>
+          {projects.map((project) => {
+            const meetingCount = meetingRecords.filter((meeting) => meeting.project === project.name).length;
+            const taskCount = actionItems.filter((item) => item.project === project.name).length;
+            return (
+              <div className="table-row" key={project.code}>
+                <div>
+                  <b>{project.name}</b>
+                  <span>{project.stage}</span>
+                </div>
+                <span>PM：{project.manager}</span>
+                <strong>{project.progress}%</strong>
+                <span>{meetingCount} 筆會議 · {taskCount} 項任務</span>
               </div>
-              <span>{project.owner}</span>
-              <strong>{project.progress}%</strong>
-              <span>{project.nextAction}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     </AppShell>
