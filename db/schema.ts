@@ -78,3 +78,19 @@ export const actionItems = sqliteTable("action_items", {
   gate: text("gate").notNull(),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const workflowItems = sqliteTable("workflow_items", {
+  id: text("id").primaryKey(),
+  projectCode: text("project_code").notNull(),
+  projectName: text("project_name").notNull(),
+  phase: text("phase").notNull(),
+  title: text("title").notNull(),
+  owner: text("owner").notNull(),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  dueDate: text("due_date").notNull(),
+  status: text("status").notNull(),
+  documentUrl: text("document_url").notNull().default(""),
+  completedAt: text("completed_at").notNull().default(""),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 const navItems = [
   { href: "/", label: "總覽", icon: "總" },
+  { href: "/flow", label: "流程管理", icon: "流" },
   { href: "/projects", label: "案件管理", icon: "案" },
   { href: "/people", label: "人員與任務", icon: "人" },
   { href: "/gates", label: "四大關任務", icon: "關" },
@@ -42,9 +43,9 @@ export function AppShell({ active, title, eyebrow, actions, children }: AppShell
         </nav>
 
         <section className="sidebar-summary">
-          <span>角色入口</span>
-          <strong>PM 管流程，開發管交付</strong>
-          <p>會議後的決議會轉成指定負責人的任務，所有人回來看自己的待辦與下一步。</p>
+          <span>流程核心</span>
+          <strong>提案、啟動、期中、期末</strong>
+          <p>每個小關都要有窗口、內容、結束時間與文件連結，讓計畫人員和研發對齊。</p>
         </section>
       </aside>
 
