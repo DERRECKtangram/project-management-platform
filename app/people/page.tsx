@@ -1,16 +1,16 @@
+import Link from "next/link";
 import { AppShell } from "../components/AppShell";
-import { TaskBoard } from "../components/TaskBoard";
-import { actionItems, members } from "../data";
+import { PeopleWorkload } from "../components/PeopleWorkload";
 
 export default function PeoplePage() {
   return (
     <AppShell
       active="/people"
-      eyebrow="人員與任務"
-      title="不同角色進入後看到自己的責任"
-      actions={<a className="primary-action" href="/meetings">新增會議紀錄</a>}
+      eyebrow="人員任務"
+      title="依負責窗口整理每個人的小關、期限與文件缺口"
+      actions={<Link className="primary-action" href="/projects">新增小關</Link>}
     >
-      <TaskBoard initialMembers={members} initialTasks={actionItems} />
+      <PeopleWorkload />
     </AppShell>
   );
 }

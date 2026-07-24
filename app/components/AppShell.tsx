@@ -3,14 +3,11 @@ import type { ReactNode } from "react";
 
 const navItems = [
   { href: "/", label: "總覽", icon: "總" },
-  { href: "/flow", label: "流程管理", icon: "流" },
-  { href: "/projects", label: "案件管理", icon: "案" },
-  { href: "/people", label: "人員與任務", icon: "人" },
-  { href: "/gates", label: "四大關任務", icon: "關" },
-  { href: "/documents", label: "附件資料庫", icon: "檔" },
-  { href: "/meetings", label: "會議紀錄", icon: "會" },
-  { href: "/reports", label: "報告中心", icon: "報" },
-  { href: "/settings", label: "角色與規則", icon: "設" },
+  { href: "/projects", label: "專案", icon: "案" },
+  { href: "/people", label: "人員任務", icon: "人" },
+  { href: "/meetings", label: "會議", icon: "會" },
+  { href: "/reports", label: "報告", icon: "報" },
+  { href: "/settings", label: "設定", icon: "設" },
 ];
 
 type AppShellProps = {
@@ -44,8 +41,8 @@ export function AppShell({ active, title, eyebrow, actions, children }: AppShell
 
         <section className="sidebar-summary">
           <span>流程核心</span>
-          <strong>提案、啟動、期中、期末</strong>
-          <p>每個小關都要有窗口、內容、結束時間與文件連結，讓計畫人員和研發對齊。</p>
+          <strong>專案 → 四階段 → 小關</strong>
+          <p>每個小關都要有窗口、內容方向、截止日、完成狀態與文件連結，讓計畫人員和研發人員對齊。</p>
         </section>
       </aside>
 

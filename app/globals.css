@@ -1323,6 +1323,131 @@ select {
   margin: 2px 0 0;
 }
 
+.manager-layout,
+.workspace-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.project-form {
+  align-items: end;
+}
+
+.form-message.left {
+  margin-top: 12px;
+  max-width: none;
+  text-align: left;
+}
+
+.empty-state {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 22px;
+}
+
+.empty-state h2 {
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 900;
+  margin: 0;
+}
+
+.empty-state p {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.clickable-card,
+.clickable-row {
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.clickable-card:hover,
+.clickable-row:hover {
+  border-color: #9db5d5;
+  box-shadow: 0 16px 34px rgba(16, 24, 40, 0.09);
+  transform: translateY(-1px);
+}
+
+.project-hero {
+  align-items: center;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+}
+
+.project-hero span {
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.project-hero h2 {
+  color: var(--ink);
+  font-size: clamp(26px, 3vw, 38px);
+  font-weight: 900;
+  line-height: 1.2;
+  margin: 4px 0 8px;
+}
+
+.project-hero p,
+.hero-progress small {
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.hero-progress {
+  display: grid;
+  gap: 10px;
+}
+
+.hero-progress strong {
+  color: var(--ink);
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.risk-低 {
+  background: #dcfae6;
+  color: var(--green);
+}
+
+.risk-中 {
+  background: #dbeafe;
+  color: var(--blue);
+}
+
+.risk-高 {
+  background: #fff0d3;
+  color: var(--amber);
+}
+
+.flow-item-head b.done,
+.flow-item-head b.active,
+.flow-item-head b.risk,
+.flow-item-head b.waiting {
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+.flow-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.flow-actions button {
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.report-card .secondary-action {
+  min-height: 34px;
+  padding: 7px 10px;
+}
+
 @media (max-width: 1180px) {
   .metric-grid,
   .report-grid {
@@ -1330,6 +1455,7 @@ select {
   }
 
   .dashboard-grid,
+  .project-hero,
   .project-board,
   .gate-lanes,
   .role-entry-grid,

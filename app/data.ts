@@ -1,6 +1,6 @@
 export type GateStatus = "done" | "active" | "risk" | "waiting";
 export type RiskLevel = "低" | "中" | "高";
-export type RoleType = "專案管理人員" | "開發人員" | "管理層";
+export type RoleType = "專案管理人員" | "研發人員" | "管理層";
 
 export type Project = {
   code: string;
@@ -79,7 +79,6 @@ export const statusText: Record<GateStatus, string> = {
   waiting: "待啟動",
 };
 
-// Keep these arrays empty. Real data is loaded from Cloudflare D1 through API routes.
 export const members: Member[] = [];
 export const projects: Project[] = [];
 export const gateSteps: GateStep[] = [];

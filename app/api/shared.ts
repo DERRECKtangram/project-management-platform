@@ -2,10 +2,6 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../../db";
 import * as schema from "../../db/schema";
 
-function encode(value: unknown) {
-  return JSON.stringify(value);
-}
-
 function decodeList(value: string) {
   try {
     const parsed = JSON.parse(value);
@@ -52,7 +48,7 @@ export async function getWorkspaceData() {
 export function routeError(error: unknown) {
   const message = error instanceof Error ? error.message : "Unexpected error";
   if (message.includes("no such table")) {
-    return "資料庫表格尚未建立，請先完成部署讓 Cloudflare 套用 D1 migration。";
+    return "資料庫表格尚未建立，請先完成 Cloudflare D1 migration。";
   }
   if (message.includes("D1 binding `DB` is unavailable")) {
     return "目前環境沒有 D1 資料庫綁定；部署到 Cloudflare 後會由 Sites 提供 DB。";

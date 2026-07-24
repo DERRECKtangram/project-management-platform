@@ -1,15 +1,18 @@
+import Link from "next/link";
 import { AppShell } from "../components/AppShell";
-import { FlowManager } from "../components/FlowManager";
 
 export default function FlowPage() {
   return (
     <AppShell
-      active="/flow"
+      active="/projects"
       eyebrow="流程管理"
-      title="用四階段小關對齊計畫人員與研發人員"
-      actions={<a className="secondary-action" href="/meetings">查看會議紀錄</a>}
+      title="流程已整併到專案工作台"
+      actions={<Link className="primary-action" href="/projects">前往專案中心</Link>}
     >
-      <FlowManager />
+      <section className="panel empty-state">
+        <h2>新的操作方式更單純</h2>
+        <p>先選一個專案，再在專案內管理提案、啟動、期中、期末的小關，避免流程和案件分開造成混亂。</p>
+      </section>
     </AppShell>
   );
 }

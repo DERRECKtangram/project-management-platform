@@ -6,7 +6,7 @@ import { ensureSeedData, newId, routeError } from "../shared";
 const phases = ["提案", "啟動", "期中", "期末"];
 
 type FlowPayload = {
-  action?: "create-project" | "create-item" | "update-item";
+  action?: "create-project" | "create-item";
   projectCode?: string;
   projectName?: string;
   agency?: string;
@@ -35,14 +35,43 @@ function encodeDevelopers(value?: string) {
   );
 }
 
-async function ensureWorkflowSeed() {
+function decodeDevelopers(value: string) {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+async function getFlowDb() {
   await ensureSeedData();
   return getDb();
 }
 
+async function updateProjectRollup(projectCode: string) {
+  const db = await getDb();
+  const items = await db
+    .select()
+    .from(schema.workflowItems)
+    .where(eq(schema.workflowItems.projectCode, projectCode));
+
+  const doneCount = items.filter((item) => item.status === "已完成").length;
+  const progress = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
+  const firstOpen = items.find((item) => item.status !== "已完成");
+  const lastDone = [...items].reverse().find((item) => item.status === "已完成");
+  const stage = firstOpen?.phase ?? lastDone?.phase ?? "提案";
+  const nextAction = firstOpen ? `${firstOpen.phase}：${firstOpen.title}` : "所有小關已完成，準備結案封存";
+
+  await db
+    .update(schema.projects)
+    .set({ progress, stage, nextAction })
+    .where(eq(schema.projects.code, projectCode));
+}
+
 export async function GET() {
   try {
-    const db = await ensureWorkflowSeed();
+    const db = await getFlowDb();
     const [projects, workflowItems] = await Promise.all([
       db.select().from(schema.projects),
       db.select().from(schema.workflowItems),
@@ -52,7 +81,7 @@ export async function GET() {
       phases,
       projects: projects.map((project) => ({
         ...project,
-        developers: JSON.parse(project.developers || "[]"),
+        developers: decodeDevelopers(project.developers),
       })),
       workflowItems,
     });
@@ -63,7 +92,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const db = await ensureWorkflowSeed();
+    const db = await getFlowDb();
     const payload = (await request.json()) as FlowPayload;
 
     if (payload.action === "create-project") {
@@ -90,7 +119,7 @@ export async function POST(request: Request) {
         })
         .returning();
 
-      return Response.json({ project: { ...project, developers: JSON.parse(project.developers) } }, { status: 201 });
+      return Response.json({ project: { ...project, developers: decodeDevelopers(project.developers) } }, { status: 201 });
     }
 
     if (payload.action === "create-item") {
@@ -107,7 +136,7 @@ export async function POST(request: Request) {
           id: newId("WF"),
           projectCode,
           projectName,
-          phase: payload.phase?.trim() || "提案",
+          phase: phases.includes(payload.phase ?? "") ? payload.phase!.trim() : "提案",
           title,
           owner: payload.owner?.trim() || "未指定",
           role: payload.role?.trim() || "專案管理人員",
@@ -119,6 +148,7 @@ export async function POST(request: Request) {
         })
         .returning();
 
+      await updateProjectRollup(projectCode);
       return Response.json({ item }, { status: 201 });
     }
 
@@ -130,12 +160,22 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const db = await ensureWorkflowSeed();
+    const db = await getFlowDb();
     const payload = (await request.json()) as FlowPayload;
     const id = payload.id?.trim();
 
     if (!id) {
       return Response.json({ error: "小關 id 必填。" }, { status: 400 });
+    }
+
+    const existing = await db
+      .select()
+      .from(schema.workflowItems)
+      .where(eq(schema.workflowItems.id, id))
+      .get();
+
+    if (!existing) {
+      return Response.json({ error: "找不到小關。" }, { status: 404 });
     }
 
     const status = payload.status?.trim();
@@ -156,10 +196,7 @@ export async function PATCH(request: Request) {
       .where(eq(schema.workflowItems.id, id))
       .returning();
 
-    if (!item) {
-      return Response.json({ error: "找不到小關。" }, { status: 404 });
-    }
-
+    await updateProjectRollup(existing.projectCode);
     return Response.json({ item });
   } catch (error) {
     return Response.json({ error: routeError(error) }, { status: 500 });
