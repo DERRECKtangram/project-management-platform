@@ -25,6 +25,18 @@ function phaseClass(phase: string) {
   return "phase-close";
 }
 
+function normalizeDateInput(value: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
+}
+
+function isOverdue(item: WorkflowItem) {
+  if (item.status === "已完成") return false;
+  if (!normalizeDateInput(item.dueDate)) return false;
+  const today = new Date();
+  const todayKey = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().slice(0, 10);
+  return item.dueDate < todayKey;
+}
+
 export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
   const { data, loading, message, setMessage, refresh } = useFlowData();
   const [phase, setPhase] = useState("提案");
@@ -89,6 +101,19 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
       return;
     }
     await refresh();
+  }
+
+  async function saveEditedItem(item: WorkflowItem, form: FormData) {
+    await updateItem(item, {
+      title: String(form.get("title") || ""),
+      phase: String(form.get("phase") || ""),
+      owner: String(form.get("owner") || ""),
+      role: String(form.get("role") || ""),
+      dueDate: String(form.get("dueDate") || ""),
+      content: String(form.get("content") || ""),
+      documentUrl: String(form.get("documentUrl") || ""),
+    });
+    setMessage("小關內容已儲存。");
   }
 
   if (loading) {
@@ -185,68 +210,110 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                 <strong>{phaseItems.filter((item) => item.status === "已完成").length}/{phaseItems.length}</strong>
               </header>
               {phaseItems.length === 0 ? <p className="plain-copy">尚未新增小關</p> : null}
-              {phaseItems.map((item) => (
-                <div className="flow-item" key={item.id}>
-                  <div className="flow-item-head">
-                    <span>{item.role}</span>
-                    <b className={statusClass(item.status)}>{item.status}</b>
-                  </div>
-                  <h3>{item.title}</h3>
-                  <p>{item.content}</p>
-                  <dl>
-                    <div>
-                      <dt>窗口</dt>
-                      <dd>{item.owner}</dd>
-                    </div>
-                    <div>
-                      <dt>截止</dt>
-                      <dd>{item.dueDate}</dd>
-                    </div>
-                    <div>
-                      <dt>文件</dt>
-                      <dd>
-                        {item.documentUrl ? (
-                          <a className="doc-link" href={item.documentUrl} rel="noreferrer" target="_blank">
-                            開啟連結
-                          </a>
-                        ) : (
-                          "未提供"
-                        )}
-                      </dd>
-                    </div>
-                    {item.completedAt ? (
-                      <div>
-                        <dt>完成</dt>
-                        <dd>{item.completedAt}</dd>
+              {phaseItems.map((item) => {
+                const overdue = isOverdue(item);
+                return (
+                  <div className={`flow-item ${overdue ? "overdue" : ""}`} key={item.id}>
+                    <div className="flow-item-head">
+                      <span>{item.role}</span>
+                      <div className="flow-status-line">
+                        <b className={statusClass(item.status)}>{item.status}</b>
+                        <strong className={`due-pill ${overdue ? "overdue" : ""}`}>期限 {item.dueDate}</strong>
                       </div>
-                    ) : null}
-                  </dl>
-                  <label>
-                    更新文件連結
-                    <input
-                      defaultValue={item.documentUrl}
-                      onBlur={(event) => {
-                        if (event.currentTarget.value !== item.documentUrl) {
-                          void updateItem(item, { documentUrl: event.currentTarget.value });
-                        }
+                    </div>
+                    <h3>{item.title}</h3>
+                    <section className="rd-content-preview">
+                      <span>研發填報內容</span>
+                      <p>{item.content === "待補內容" ? "尚未填寫" : item.content}</p>
+                    </section>
+                    <dl>
+                      <div>
+                        <dt>窗口</dt>
+                        <dd>{item.owner}</dd>
+                      </div>
+                      <div>
+                        <dt>階段</dt>
+                        <dd>{item.phase}</dd>
+                      </div>
+                      <div>
+                        <dt>文件</dt>
+                        <dd>
+                          {item.documentUrl ? (
+                            <a className="doc-link" href={item.documentUrl} rel="noreferrer" target="_blank">
+                              開啟連結
+                            </a>
+                          ) : (
+                            "未提供"
+                          )}
+                        </dd>
+                      </div>
+                      {item.completedAt ? (
+                        <div>
+                          <dt>完成</dt>
+                          <dd>{item.completedAt}</dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                    <form
+                      className="inline-edit-form"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void saveEditedItem(item, new FormData(event.currentTarget));
                       }}
-                      placeholder="貼上 Google 文件或雲端連結"
-                    />
-                  </label>
-                  <div className="flow-actions">
-                    {statuses.map((status) => (
-                      <button
-                        className={status === item.status ? "primary-action" : "secondary-action"}
-                        key={status}
-                        onClick={() => void updateItem(item, { status })}
-                        type="button"
-                      >
-                        {status}
-                      </button>
-                    ))}
+                    >
+                      <label>
+                        小關名稱
+                        <input name="title" defaultValue={item.title} />
+                      </label>
+                      <label>
+                        階段
+                        <select name="phase" defaultValue={item.phase}>
+                          {data.phases.map((itemPhaseOption) => (
+                            <option key={itemPhaseOption}>{itemPhaseOption}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        負責窗口
+                        <input name="owner" defaultValue={item.owner} />
+                      </label>
+                      <label>
+                        角色
+                        <select name="role" defaultValue={item.role}>
+                          {roles.map((role) => (
+                            <option key={role}>{role}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        期限
+                        <input name="dueDate" defaultValue={normalizeDateInput(item.dueDate)} type="date" />
+                      </label>
+                      <label className="wide-field">
+                        研發填報內容
+                        <textarea name="content" defaultValue={item.content === "待補內容" ? "" : item.content} />
+                      </label>
+                      <label className="wide-field">
+                        文件或 Google 連結
+                        <input name="documentUrl" defaultValue={item.documentUrl} placeholder="貼上 Google 文件或雲端連結" />
+                      </label>
+                      <button className="secondary-action" type="submit">儲存小關</button>
+                    </form>
+                    <div className="flow-actions">
+                      {statuses.map((status) => (
+                        <button
+                          className={status === item.status ? "primary-action" : "secondary-action"}
+                          key={status}
+                          onClick={() => void updateItem(item, { status })}
+                          type="button"
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </article>
           );
         })}

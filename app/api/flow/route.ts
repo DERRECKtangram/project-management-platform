@@ -140,13 +140,14 @@ export async function POST(request: Request) {
         return Response.json({ error: "專案與小關名稱必填。" }, { status: 400 });
       }
 
+      const phase = phases.includes(payload.phase ?? "") ? payload.phase!.trim() : "提案";
       const [item] = await db
         .insert(schema.workflowItems)
         .values({
           id: newId("WF"),
           projectCode,
           projectName,
-          phase: phases.includes(payload.phase ?? "") ? payload.phase!.trim() : "提案",
+          phase,
           title,
           owner: payload.owner?.trim() || "未指定",
           role: payload.role?.trim() || "專案管理人員",
@@ -188,21 +189,32 @@ export async function PATCH(request: Request) {
       return Response.json({ error: "找不到小關。" }, { status: 404 });
     }
 
-    const status = payload.status?.trim();
-    const documentUrl = payload.documentUrl?.trim();
-    const content = payload.content?.trim();
     const update: Partial<typeof schema.workflowItems.$inferInsert> = {};
-
-    if (status) {
-      const normalizedStatus = normalizeStatus(status);
+    if (payload.status !== undefined) {
+      const normalizedStatus = normalizeStatus(payload.status?.trim());
       update.status = normalizedStatus;
       update.completedAt = normalizedStatus === doneStatus ? new Date().toISOString().slice(0, 10) : "";
     }
-    if (documentUrl !== undefined) {
-      update.documentUrl = documentUrl;
+    if (payload.documentUrl !== undefined) {
+      update.documentUrl = payload.documentUrl.trim();
     }
-    if (content !== undefined) {
-      update.content = content || "待補內容";
+    if (payload.content !== undefined) {
+      update.content = payload.content.trim() || "待補內容";
+    }
+    if (payload.title !== undefined) {
+      update.title = payload.title.trim() || existing.title;
+    }
+    if (payload.owner !== undefined) {
+      update.owner = payload.owner.trim() || "未指定";
+    }
+    if (payload.role !== undefined) {
+      update.role = payload.role.trim() || existing.role;
+    }
+    if (payload.dueDate !== undefined) {
+      update.dueDate = payload.dueDate.trim() || "未指定";
+    }
+    if (payload.phase !== undefined) {
+      update.phase = phases.includes(payload.phase.trim()) ? payload.phase.trim() : existing.phase;
     }
 
     const [item] = await db

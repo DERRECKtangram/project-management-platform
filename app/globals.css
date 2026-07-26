@@ -1226,6 +1226,37 @@ select {
   padding: 5px 8px;
 }
 
+.flow-status-line {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.due-pill {
+  background: #eef3f8;
+  border-radius: 999px;
+  color: #475467;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 5px 8px;
+}
+
+.due-pill.overdue {
+  background: #ffe4e8;
+  color: var(--red);
+}
+
+.flow-item.overdue {
+  border-color: #f7a6b8;
+  box-shadow: 0 16px 36px rgba(192, 16, 72, 0.12);
+}
+
+.flow-item.overdue h3 {
+  color: var(--red);
+}
+
 .flow-item h3 {
   color: var(--ink);
   font-size: 18px;
@@ -1235,6 +1266,28 @@ select {
 
 .flow-item p {
   color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.rd-content-preview {
+  background: #f7fff9;
+  border: 1px solid #c7f0d7;
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+}
+
+.rd-content-preview span {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.rd-content-preview p {
+  color: var(--text);
   font-size: 14px;
   line-height: 1.55;
   margin: 0;
@@ -1274,6 +1327,48 @@ select {
   min-height: 40px;
   padding: 9px 10px;
   width: 100%;
+}
+
+.inline-edit-form {
+  border-top: 1px solid #e8edf4;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 12px;
+}
+
+.inline-edit-form label {
+  color: var(--muted);
+  display: grid;
+  font-size: 12px;
+  font-weight: 900;
+  gap: 6px;
+}
+
+.inline-edit-form input,
+.inline-edit-form select,
+.inline-edit-form textarea {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  min-height: 38px;
+  padding: 8px 10px;
+  width: 100%;
+}
+
+.inline-edit-form textarea {
+  line-height: 1.55;
+  min-height: 84px;
+  resize: vertical;
+}
+
+.inline-edit-form .wide-field {
+  grid-column: 1 / -1;
+}
+
+.inline-edit-form button {
+  align-self: end;
 }
 
 .flow-actions {
@@ -1973,6 +2068,12 @@ select {
 
   .meeting-form .wide-field {
     grid-column: auto;
+  }
+
+  .inline-edit-form,
+  .inline-edit-form .wide-field {
+    grid-column: auto;
+    grid-template-columns: 1fr;
   }
 
   .panel {
