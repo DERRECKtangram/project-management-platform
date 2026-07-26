@@ -2667,25 +2667,32 @@ select {
   gap: 12px;
 }
 
-.report-entry-row {
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid var(--line);
-  border-radius: 8px;
+.report-entry-editor label,
+.report-links-editor {
   display: grid;
-  gap: 10px;
-  padding: 12px;
+  gap: 7px;
 }
 
-.report-entry-head {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-}
-
-.report-entry-head strong {
-  color: var(--ink);
+.report-entry-editor label,
+.report-links-editor > span {
+  color: var(--muted);
   font-size: 13px;
-  font-weight: 950;
+  font-weight: 900;
+}
+
+.report-entry-editor textarea {
+  background: #ffffff;
+}
+
+.report-link-row {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.report-link-row input {
+  background: #ffffff;
 }
 
 .text-danger-button {
@@ -2713,6 +2720,13 @@ select {
   display: grid;
   gap: 8px;
   grid-template-columns: 1fr 1fr;
+}
+
+.inline-status-actions {
+  background: #ffffff;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  padding: 10px;
 }
 
 .rd-phase-badge {

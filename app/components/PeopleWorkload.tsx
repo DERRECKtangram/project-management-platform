@@ -242,61 +242,62 @@ function ReportEntryEditor({
   reporter: string;
   saving: boolean;
 }) {
-  const [entries, setEntries] = useState<ReportEntry[]>(() => getOwnerReport(item, reporter).entries);
+  const initialEntries = getOwnerReport(item, reporter).entries;
+  const [content, setContent] = useState(() => initialEntries.find((entry) => entry.content.trim())?.content ?? "");
+  const [links, setLinks] = useState<string[]>(() => {
+    const nextLinks = initialEntries.map((entry) => entry.link).filter((link) => link.trim());
+    return nextLinks.length > 0 ? nextLinks : [""];
+  });
   const [entryMessage, setEntryMessage] = useState("");
 
   useEffect(() => {
-    setEntries(getOwnerReport(item, reporter).entries);
+    const nextEntries = getOwnerReport(item, reporter).entries;
+    setContent(nextEntries.find((entry) => entry.content.trim())?.content ?? "");
+    const nextLinks = nextEntries.map((entry) => entry.link).filter((link) => link.trim());
+    setLinks(nextLinks.length > 0 ? nextLinks : [""]);
     setEntryMessage("");
   }, [item.id, item.content, item.documentUrl, reporter]);
 
-  function updateEntry(index: number, patch: Partial<ReportEntry>) {
-    setEntries((current) => current.map((entry, entryIndex) => (entryIndex === index ? { ...entry, ...patch } : entry)));
+  function updateLink(index: number, value: string) {
+    setLinks((current) => current.map((link, linkIndex) => (linkIndex === index ? value : link)));
   }
 
-  function removeEntry(index: number) {
-    setEntries((current) => {
+  function removeLink(index: number) {
+    setLinks((current) => {
       if (current.length === 1) {
-        setEntryMessage("至少需要保留一筆內容與連結。");
+        setEntryMessage("至少需要保留一個連結欄位。");
         return current;
       }
       setEntryMessage("");
-      return current.filter((_, entryIndex) => entryIndex !== index);
+      return current.filter((_, linkIndex) => linkIndex !== index);
     });
   }
 
   return (
     <div className="report-entry-editor">
-      {entries.map((entry, index) => (
-        <section className="report-entry-row" key={`${item.id}-${index}`}>
-          <div className="report-entry-head">
-            <strong>內容 {index + 1}</strong>
-            <button className="text-danger-button" onClick={() => removeEntry(index)} type="button">
+      <label>
+        研發填報內容
+        <textarea
+          onChange={(event) => setContent(event.currentTarget.value)}
+          placeholder="寫下目前完成內容、討論結論、測試結果或需要 PM 知道的方向"
+          value={content}
+        />
+      </label>
+      <div className="report-links-editor">
+        <span>文件或 Google 連結</span>
+        {links.map((link, index) => (
+          <div className="report-link-row" key={`${item.id}-link-${index}`}>
+            <input onChange={(event) => updateLink(index, event.currentTarget.value)} placeholder="貼上成果文件連結" value={link} />
+            <button className="text-danger-button" onClick={() => removeLink(index)} type="button">
               刪除
             </button>
           </div>
-          <label>
-            研發填報內容
-            <textarea
-              onChange={(event) => updateEntry(index, { content: event.currentTarget.value })}
-              placeholder="寫下目前完成內容、討論結論、測試結果或需要 PM 知道的方向"
-              value={entry.content}
-            />
-          </label>
-          <label>
-            文件或 Google 連結
-            <input
-              onChange={(event) => updateEntry(index, { link: event.currentTarget.value })}
-              placeholder="貼上成果文件連結"
-              value={entry.link}
-            />
-          </label>
-        </section>
-      ))}
+        ))}
+      </div>
       {entryMessage ? <p className="entry-warning">{entryMessage}</p> : null}
       <div className="report-entry-actions">
-        <button className="secondary-action" onClick={() => setEntries((current) => [...current, { content: "", link: "" }])} type="button">
-          ＋ 新增內容與連結
+        <button className="secondary-action" onClick={() => setLinks((current) => [...current, ""])} type="button">
+          ＋ 新增連結
         </button>
         <button
           className="primary-action"
@@ -307,7 +308,9 @@ function ReportEntryEditor({
               ...current.reportsByOwner,
               [reporter]: {
                 status: getOwnerReport(item, reporter).status,
-                entries,
+                entries: links
+                  .map((link, index) => ({ content: index === 0 ? content : "", link }))
+                  .filter((entry, index) => index === 0 || entry.link.trim()),
               },
             };
             const nextContent = { ...current, reportsByOwner };
@@ -603,10 +606,15 @@ export function PeopleWorkload() {
                     </section>
                     <section className="rd-content-preview">
                       <span>研發填報內容</span>
-                      {reportEntries.some((entry) => entry.content.trim()) ? (
-                        reportEntries.map((entry, index) =>
-                          entry.content.trim() ? <p key={`${item.id}-preview-${index}`}>{entry.content}</p> : null,
-                        )
+                      {isEditing ? (
+                        <ReportEntryEditor
+                          item={item}
+                          onSave={(targetItem, patch) => void updateItem(targetItem, patch)}
+                          reporter={reporter}
+                          saving={savingId === item.id}
+                        />
+                      ) : reportEntries.some((entry) => entry.content.trim()) ? (
+                        reportEntries.map((entry, index) => (entry.content.trim() ? <p key={`${item.id}-preview-${index}`}>{entry.content}</p> : null))
                       ) : (
                         <p>尚未填寫</p>
                       )}
@@ -622,26 +630,18 @@ export function PeopleWorkload() {
                       </button>
                     </div>
                     {isEditing ? (
-                      <div className="rd-edit-panel">
-                        <ReportEntryEditor
-                          item={item}
-                          onSave={(targetItem, patch) => void updateItem(targetItem, patch)}
-                          reporter={reporter}
-                          saving={savingId === item.id}
-                        />
-                        <div className="rd-actions">
-                          {statuses.map((status) => (
-                            <button
-                              className={status === itemStatus ? "primary-action" : "secondary-action"}
-                              disabled={savingId === item.id}
-                              key={status}
-                              onClick={() => void updateOwnerStatus(item, reporter, status)}
-                              type="button"
-                            >
-                              {status}
-                            </button>
-                          ))}
-                        </div>
+                      <div className="rd-actions inline-status-actions">
+                        {statuses.map((status) => (
+                          <button
+                            className={status === itemStatus ? "primary-action" : "secondary-action"}
+                            disabled={savingId === item.id}
+                            key={status}
+                            onClick={() => void updateOwnerStatus(item, reporter, status)}
+                            type="button"
+                          >
+                            {status}
+                          </button>
+                        ))}
                       </div>
                     ) : null}
                   </div>
