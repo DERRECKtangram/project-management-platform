@@ -41,6 +41,12 @@ function latestDueDate(items: WorkflowItem[]) {
   return dates.at(-1) ?? "";
 }
 
+function phaseState(items: WorkflowItem[]) {
+  if (items.length === 0) return { className: "waiting", label: "尚未開始" };
+  if (items.every((item) => item.status === "已完成")) return { className: "done", label: "已完成" };
+  return { className: "active", label: "進行中" };
+}
+
 function displayDate(value: string) {
   if (!normalizeDateInput(value)) return value;
   const [year, month, day] = value.split("-");
@@ -266,6 +272,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
           const phaseItems = sortedItems.filter((item) => item.phase === itemPhase);
           const phaseNumber = data.phases.indexOf(itemPhase) + 1;
           const phaseDue = latestDueDate(phaseItems);
+          const state = phaseState(phaseItems);
           return (
             <article
               className={`flow-phase ${phaseClass(itemPhase)} ${dropPhase === itemPhase ? "drop-ready" : ""}`}
@@ -280,9 +287,11 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
               <header className="phase-header">
                 <div className="phase-title-line">
                   <span>{itemPhase}</span>
+                </div>
+                <div className={`phase-state-pill ${state.className}`}>
+                  <strong>{state.label}</strong>
                   {phaseDue ? <small>最晚 {displayDate(phaseDue)}</small> : null}
                 </div>
-                <strong>{phaseItems.filter((item) => item.status === "已完成").length}/{phaseItems.length}</strong>
               </header>
               {phaseItems.length === 0 ? <p className="plain-copy">尚未新增小關</p> : null}
               {phaseItems.map((item, itemIndex) => {

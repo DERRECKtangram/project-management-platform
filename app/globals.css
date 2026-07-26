@@ -1215,20 +1215,6 @@ select {
   gap: 10px;
 }
 
-.phase-title-line small {
-  background: rgba(255, 255, 255, 0.82);
-  border-radius: 999px;
-  color: #667085;
-  font-size: 12px;
-  font-weight: 900;
-  padding: 6px 9px;
-}
-
-.flow-phase header strong {
-  color: var(--muted);
-  font-size: 12px;
-}
-
 .flow-item {
   cursor: grab;
   display: grid;
@@ -2210,10 +2196,54 @@ select {
 }
 
 .phase-header strong {
-  background: rgba(255, 255, 255, 0.72);
-  border-radius: 999px;
   color: var(--ink);
-  padding: 6px 10px;
+}
+
+.phase-state-pill {
+  align-items: flex-end;
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 14px;
+  display: grid;
+  gap: 2px;
+  min-width: 92px;
+  padding: 8px 11px;
+  text-align: right;
+}
+
+.phase-state-pill strong {
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.phase-state-pill small {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.phase-state-pill.done {
+  background: #e8fff1;
+}
+
+.phase-state-pill.done strong {
+  color: #087443;
+}
+
+.phase-state-pill.active {
+  background: #eaf3ff;
+}
+
+.phase-state-pill.active strong {
+  color: #1f6feb;
+}
+
+.phase-state-pill.waiting {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.phase-state-pill.waiting strong {
+  color: #667085;
 }
 
 @media (max-width: 1180px) {

@@ -33,6 +33,8 @@ type FlowPayload = {
   }>;
 };
 
+type WorkflowRow = typeof schema.workflowItems.$inferSelect;
+
 function normalizeStatus(status?: string) {
   if (status === "已完成") return "已完成";
   if (status === "進行中" || status === "待確認") return "進行中";
@@ -57,6 +59,30 @@ function decodeDevelopers(value: string) {
   }
 }
 
+function calculateProjectRollup(items: WorkflowRow[]) {
+  const progress = Math.round(
+    phases.reduce((total, phase) => {
+      const phaseItems = items.filter((item) => item.phase === phase);
+      if (phaseItems.length === 0) return total;
+      const doneCount = phaseItems.filter((item) => normalizeStatus(item.status) === doneStatus).length;
+      return total + (doneCount / phaseItems.length) * 25;
+    }, 0),
+  );
+  const stage =
+    phases.find((phase) => {
+      const phaseItems = items.filter((item) => item.phase === phase);
+      return phaseItems.length === 0 || phaseItems.some((item) => normalizeStatus(item.status) !== doneStatus);
+    }) ?? phases[phases.length - 1];
+  const firstOpen = items.find((item) => item.phase === stage && normalizeStatus(item.status) !== doneStatus);
+  const nextAction = firstOpen
+    ? `${firstOpen.phase}：${firstOpen.title}`
+    : progress >= 100
+      ? "所有小關已完成，準備結案封存"
+      : `${stage}：新增或完成小關`;
+
+  return { progress, stage, nextAction };
+}
+
 async function getFlowDb() {
   await ensureSeedData();
   return getDb();
@@ -67,18 +93,14 @@ async function updateProjectRollup(projectCode: string) {
   const items = await db
     .select()
     .from(schema.workflowItems)
-    .where(eq(schema.workflowItems.projectCode, projectCode));
+    .where(eq(schema.workflowItems.projectCode, projectCode))
+    .orderBy(asc(schema.workflowItems.phase), asc(schema.workflowItems.position), asc(schema.workflowItems.createdAt));
 
-  const doneCount = items.filter((item) => normalizeStatus(item.status) === doneStatus).length;
-  const progress = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
-  const firstOpen = items.find((item) => normalizeStatus(item.status) !== doneStatus);
-  const lastDone = [...items].reverse().find((item) => normalizeStatus(item.status) === doneStatus);
-  const stage = firstOpen?.phase ?? lastDone?.phase ?? "提案";
-  const nextAction = firstOpen ? `${firstOpen.phase}：${firstOpen.title}` : "所有小關已完成，準備結案封存";
+  const rollup = calculateProjectRollup(items);
 
   await db
     .update(schema.projects)
-    .set({ progress, stage, nextAction })
+    .set(rollup)
     .where(eq(schema.projects.code, projectCode));
 }
 
@@ -100,10 +122,15 @@ export async function GET() {
 
     return Response.json({
       phases,
-      projects: projects.map((project) => ({
-        ...project,
-        developers: decodeDevelopers(project.developers),
-      })),
+      projects: projects.map((project) => {
+        const projectItems = workflowItems.filter((item) => item.projectCode === project.code);
+        const rollup = calculateProjectRollup(projectItems);
+        return {
+          ...project,
+          ...rollup,
+          developers: decodeDevelopers(project.developers),
+        };
+      }),
       workflowItems: workflowItems.map((item) => ({
         ...item,
         status: normalizeStatus(item.status),
