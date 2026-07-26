@@ -85,9 +85,11 @@ function ReportEntryEditor({
   saving: boolean;
 }) {
   const [entries, setEntries] = useState<ReportEntry[]>(() => parseReportEntries(item));
+  const [entryMessage, setEntryMessage] = useState("");
 
   useEffect(() => {
     setEntries(parseReportEntries(item));
+    setEntryMessage("");
   }, [item.id, item.content, item.documentUrl]);
 
   function updateEntry(index: number, patch: Partial<ReportEntry>) {
@@ -95,7 +97,14 @@ function ReportEntryEditor({
   }
 
   function removeEntry(index: number) {
-    setEntries((current) => (current.length === 1 ? [{ content: "", link: "" }] : current.filter((_, entryIndex) => entryIndex !== index)));
+    setEntries((current) => {
+      if (current.length === 1) {
+        setEntryMessage("至少需要保留一筆內容與連結。");
+        return current;
+      }
+      setEntryMessage("");
+      return current.filter((_, entryIndex) => entryIndex !== index);
+    });
   }
 
   return (
@@ -126,6 +135,7 @@ function ReportEntryEditor({
           </label>
         </section>
       ))}
+      {entryMessage ? <p className="entry-warning">{entryMessage}</p> : null}
       <div className="report-entry-actions">
         <button className="secondary-action" onClick={() => setEntries((current) => [...current, { content: "", link: "" }])} type="button">
           ＋ 新增內容與連結
