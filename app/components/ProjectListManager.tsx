@@ -21,7 +21,6 @@ export function ProjectListManager() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "create-project",
-          projectCode: form.get("projectCode"),
           projectName: form.get("projectName"),
           agency: form.get("agency"),
           manager: form.get("manager"),
@@ -55,10 +54,6 @@ export function ProjectListManager() {
         </div>
 
         <form className="meeting-form project-form" onSubmit={createProject}>
-          <label>
-            專案代號
-            <input name="projectCode" placeholder="例如 GA-2026-020" />
-          </label>
           <label>
             專案名稱
             <input name="projectName" placeholder="例如 智慧資料整合平台" required />

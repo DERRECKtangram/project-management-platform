@@ -41,7 +41,6 @@ type FlowPayload = {
 const defaultPhases = ["提案", "啟動", "期中", "期末"];
 
 const emptyProject = {
-  projectCode: "",
   projectName: "",
   agency: "",
   manager: "",
@@ -214,7 +213,6 @@ export function FlowManager() {
             </div>
           </div>
           <form className="meeting-form compact-form" onSubmit={createProject}>
-            <label>專案代號<input value={projectForm.projectCode} onChange={(event) => updateProjectField("projectCode", event.target.value)} placeholder="例如 GA-2026-020" /></label>
             <label>專案名稱<input value={projectForm.projectName} onChange={(event) => updateProjectField("projectName", event.target.value)} required /></label>
             <label>補助/機關<input value={projectForm.agency} onChange={(event) => updateProjectField("agency", event.target.value)} /></label>
             <label>計畫人員<input value={projectForm.manager} onChange={(event) => updateProjectField("manager", event.target.value)} /></label>

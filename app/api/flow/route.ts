@@ -83,6 +83,16 @@ function calculateProjectRollup(items: WorkflowRow[]) {
   return { progress, stage, nextAction };
 }
 
+async function generateProjectCode(db: Awaited<ReturnType<typeof getDb>>) {
+  const projects = await db.select({ code: schema.projects.code }).from(schema.projects);
+  const maxSerial = projects.reduce((max, project) => {
+    const match = project.code.match(/^GA-?2026-?(\d+)$/i);
+    if (!match) return max;
+    return Math.max(max, Number(match[1]) || 0);
+  }, 0);
+  return `GA2026-${String(maxSerial + 1).padStart(3, "0")}`;
+}
+
 async function getFlowDb() {
   await ensureSeedData();
   return getDb();
@@ -147,7 +157,7 @@ export async function POST(request: Request) {
     const payload = (await request.json()) as FlowPayload;
 
     if (payload.action === "create-project") {
-      const code = payload.projectCode?.trim() || newId("PRJ");
+      const code = await generateProjectCode(db);
       const name = payload.projectName?.trim();
       if (!name) {
         return Response.json({ error: "專案名稱必填。" }, { status: 400 });
