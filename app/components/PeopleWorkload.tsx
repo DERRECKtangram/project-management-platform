@@ -8,11 +8,18 @@ import { useFlowData } from "./useFlowData";
 const statuses = ["未處理", "進行中", "已完成"];
 const defaultPhases = ["提案", "啟動", "期中", "期末"];
 const reportEntryMarker = "__RD_REPORT_ENTRIES_V1__";
+const workflowContentMarker = "__WORKFLOW_CONTENT_V2__";
 const allOwnersLabel = "全部填報人";
 
 type ReportEntry = {
   content: string;
   link: string;
+};
+
+type WorkflowContent = {
+  taskContent: string;
+  taskLinks: string[];
+  reportEntries: ReportEntry[];
 };
 
 function splitOwners(value: string) {
@@ -35,37 +42,71 @@ function phaseClass(phase: string) {
   return "phase-close";
 }
 
-function parseReportEntries(item: WorkflowItem): ReportEntry[] {
-  if (item.content.startsWith(reportEntryMarker)) {
+function parseLegacyReportEntries(value: string, documentUrl = "") {
+  try {
+    const parsed = JSON.parse(value.slice(reportEntryMarker.length));
+    if (Array.isArray(parsed)) {
+      const entries = parsed
+        .map((entry) => ({
+          content: typeof entry.content === "string" ? entry.content : "",
+          link: typeof entry.link === "string" ? entry.link : "",
+        }))
+        .filter((entry) => entry.content.trim() || entry.link.trim());
+      return entries.length > 0 ? entries : [{ content: "", link: "" }];
+    }
+  } catch {
+    return [{ content: value, link: documentUrl }];
+  }
+  return [{ content: "", link: "" }];
+}
+
+function parseWorkflowContent(item: WorkflowItem): WorkflowContent {
+  if (item.content.startsWith(workflowContentMarker)) {
     try {
-      const parsed = JSON.parse(item.content.slice(reportEntryMarker.length));
-      if (Array.isArray(parsed)) {
-        const entries = parsed
-          .map((entry) => ({
-            content: typeof entry.content === "string" ? entry.content : "",
-            link: typeof entry.link === "string" ? entry.link : "",
-          }))
-          .filter((entry) => entry.content.trim() || entry.link.trim());
-        return entries.length > 0 ? entries : [{ content: "", link: "" }];
-      }
+      const parsed = JSON.parse(item.content.slice(workflowContentMarker.length));
+      return {
+        taskContent: typeof parsed.taskContent === "string" ? parsed.taskContent : "",
+        taskLinks: Array.isArray(parsed.taskLinks) ? parsed.taskLinks.filter((link: unknown) => typeof link === "string") : [],
+        reportEntries: Array.isArray(parsed.reportEntries)
+          ? parsed.reportEntries
+              .map((entry: { content?: unknown; link?: unknown }) => ({
+                content: typeof entry.content === "string" ? entry.content : "",
+                link: typeof entry.link === "string" ? entry.link : "",
+              }))
+              .filter((entry: ReportEntry) => entry.content.trim() || entry.link.trim())
+          : [],
+      };
     } catch {
-      return [{ content: item.content, link: item.documentUrl }];
+      return { taskContent: "", taskLinks: [], reportEntries: [{ content: "", link: "" }] };
     }
   }
 
-  return [
-    {
-      content: item.content === "待補內容" ? "" : item.content,
-      link: item.documentUrl,
-    },
-  ];
+  if (item.content.startsWith(reportEntryMarker)) {
+    return { taskContent: "", taskLinks: [], reportEntries: parseLegacyReportEntries(item.content, item.documentUrl) };
+  }
+
+  return {
+    taskContent: item.content === "待補內容" ? "" : item.content,
+    taskLinks: item.documentUrl ? [item.documentUrl] : [],
+    reportEntries: [{ content: "", link: "" }],
+  };
 }
 
-function serializeReportEntries(entries: ReportEntry[]) {
+function parseReportEntries(item: WorkflowItem): ReportEntry[] {
+  const entries = parseWorkflowContent(item).reportEntries;
+  return entries.length > 0 ? entries : [{ content: "", link: "" }];
+}
+
+function serializeWorkflowContent(item: WorkflowItem, entries: ReportEntry[]) {
+  const current = parseWorkflowContent(item);
   const cleanEntries = entries
     .map((entry) => ({ content: entry.content.trim(), link: entry.link.trim() }))
     .filter((entry) => entry.content || entry.link);
-  return cleanEntries.length > 0 ? `${reportEntryMarker}${JSON.stringify(cleanEntries)}` : "待補內容";
+  return `${workflowContentMarker}${JSON.stringify({
+    taskContent: current.taskContent.trim(),
+    taskLinks: current.taskLinks.map((link) => link.trim()).filter(Boolean),
+    reportEntries: cleanEntries,
+  })}`;
 }
 
 function firstReportLink(entries: ReportEntry[]) {
@@ -73,7 +114,7 @@ function firstReportLink(entries: ReportEntry[]) {
 }
 
 function hasReportLink(item: WorkflowItem) {
-  return parseReportEntries(item).some((entry) => entry.link.trim()) || Boolean(item.documentUrl);
+  return parseWorkflowContent(item).reportEntries.some((entry) => entry.link.trim());
 }
 
 function ReportEntryEditor({
@@ -144,7 +185,7 @@ function ReportEntryEditor({
         <button
           className="primary-action"
           disabled={saving}
-          onClick={() => onSave(item, { content: serializeReportEntries(entries), documentUrl: firstReportLink(entries) })}
+          onClick={() => onSave(item, { content: serializeWorkflowContent(item, entries), documentUrl: firstReportLink(entries) })}
           type="button"
         >
           儲存填報
@@ -320,6 +361,7 @@ export function PeopleWorkload() {
               {phaseItems.map((item) => {
                 const itemStatusClass = statusClass(item.status);
                 const isEditing = editingId === item.id;
+                const workflowContent = parseWorkflowContent(item);
                 const reportEntries = parseReportEntries(item);
                 const reportLinks = reportEntries.filter((entry) => entry.link.trim());
                 const itemHasLink = reportLinks.length > 0 || Boolean(item.documentUrl);
@@ -338,6 +380,19 @@ export function PeopleWorkload() {
                         文件：{itemHasLink ? "已有連結" : "缺文件"}
                       </span>
                     </div>
+                    <section className="task-content-preview">
+                      <span>要做的內容</span>
+                      <p>{workflowContent.taskContent.trim() || "尚未填寫"}</p>
+                      {workflowContent.taskLinks.length > 0 ? (
+                        <div className="task-link-list">
+                          {workflowContent.taskLinks.slice(0, 3).map((link, index) => (
+                            <a href={link} key={`${item.id}-task-reference-${index}`} rel="noreferrer" target="_blank">
+                              參考連結{workflowContent.taskLinks.length > 1 ? index + 1 : ""}
+                            </a>
+                          ))}
+                        </div>
+                      ) : null}
+                    </section>
                     <section className="rd-content-preview">
                       <span>研發填報內容</span>
                       {reportEntries.some((entry) => entry.content.trim()) ? (

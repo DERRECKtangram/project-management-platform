@@ -6,6 +6,18 @@ import type { WorkflowItem } from "./flowTypes";
 import { useFlowData } from "./useFlowData";
 
 const reportEntryMarker = "__RD_REPORT_ENTRIES_V1__";
+const workflowContentMarker = "__WORKFLOW_CONTENT_V2__";
+
+type ContentEntry = {
+  content: string;
+  link: string;
+};
+
+type WorkflowContent = {
+  taskContent: string;
+  taskLinks: string[];
+  reportEntries: ContentEntry[];
+};
 
 type ProjectWorkspaceProps = {
   code: string;
@@ -64,33 +76,90 @@ function displayDate(value: string) {
   return `${year}/${Number(month)}/${Number(day)}`;
 }
 
-function reportEntries(item: WorkflowItem) {
-  if (item.content.startsWith(reportEntryMarker)) {
+function parseLegacyReportEntries(value: string, documentUrl = "") {
+  try {
+    const parsed = JSON.parse(value.slice(reportEntryMarker.length));
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((entry) => ({
+          content: typeof entry.content === "string" ? entry.content : "",
+          link: typeof entry.link === "string" ? entry.link : "",
+        }))
+        .filter((entry) => entry.content.trim() || entry.link.trim());
+    }
+  } catch {
+    return [{ content: value, link: documentUrl }];
+  }
+  return [];
+}
+
+function parseWorkflowContent(item: WorkflowItem): WorkflowContent {
+  if (item.content.startsWith(workflowContentMarker)) {
     try {
-      const parsed = JSON.parse(item.content.slice(reportEntryMarker.length));
-      if (Array.isArray(parsed)) {
-        return parsed
-          .map((entry) => ({
-            content: typeof entry.content === "string" ? entry.content : "",
-            link: typeof entry.link === "string" ? entry.link : "",
-          }))
-          .filter((entry) => entry.content.trim() || entry.link.trim());
-      }
+      const parsed = JSON.parse(item.content.slice(workflowContentMarker.length));
+      return {
+        taskContent: typeof parsed.taskContent === "string" ? parsed.taskContent : "",
+        taskLinks: Array.isArray(parsed.taskLinks) ? parsed.taskLinks.filter((link: unknown) => typeof link === "string") : [],
+        reportEntries: Array.isArray(parsed.reportEntries)
+          ? parsed.reportEntries
+              .map((entry: { content?: unknown; link?: unknown }) => ({
+                content: typeof entry.content === "string" ? entry.content : "",
+                link: typeof entry.link === "string" ? entry.link : "",
+              }))
+              .filter((entry: ContentEntry) => entry.content.trim() || entry.link.trim())
+          : [],
+      };
     } catch {
-      return [{ content: item.content, link: item.documentUrl }];
+      return { taskContent: "", taskLinks: [], reportEntries: [] };
     }
   }
 
-  return [
-    {
-      content: item.content === "待補內容" ? "" : item.content,
-      link: item.documentUrl,
-    },
-  ].filter((entry) => entry.content.trim() || entry.link.trim());
+  if (item.content.startsWith(reportEntryMarker)) {
+    return { taskContent: "", taskLinks: [], reportEntries: parseLegacyReportEntries(item.content, item.documentUrl) };
+  }
+
+  return {
+    taskContent: item.content === "待補內容" ? "" : item.content,
+    taskLinks: item.documentUrl ? [item.documentUrl] : [],
+    reportEntries: [],
+  };
+}
+
+function serializeWorkflowContent(content: WorkflowContent) {
+  const taskContent = content.taskContent.trim();
+  const taskLinks = content.taskLinks.map((link) => link.trim()).filter(Boolean);
+  const reportEntries = content.reportEntries
+    .map((entry) => ({ content: entry.content.trim(), link: entry.link.trim() }))
+    .filter((entry) => entry.content || entry.link);
+  return `${workflowContentMarker}${JSON.stringify({ taskContent, taskLinks, reportEntries })}`;
 }
 
 function ownerChoices(projectDevelopers: string[], ownerValue = "") {
   return Array.from(new Set([...projectDevelopers, ...splitPeople(ownerValue)])).filter(Boolean);
+}
+
+function TaskLinksFields({ initialLinks = [] }: { initialLinks?: string[] }) {
+  const [links, setLinks] = useState(initialLinks.length > 0 ? initialLinks : [""]);
+
+  function updateLink(index: number, value: string) {
+    setLinks((current) => current.map((link, linkIndex) => (linkIndex === index ? value : link)));
+  }
+
+  function removeLink(index: number) {
+    setLinks((current) => (current.length === 1 ? [""] : current.filter((_, linkIndex) => linkIndex !== index)));
+  }
+
+  return (
+    <div className="link-list-field">
+      {links.map((link, index) => (
+        <div className="link-input-row" key={index}>
+          <input name="taskLink" onChange={(event) => updateLink(index, event.currentTarget.value)} placeholder="貼上 Google 文件或參考連結" value={link} />
+          <button className="secondary-action small-action" onClick={() => removeLink(index)} type="button">刪除</button>
+        </div>
+      ))}
+      <button className="secondary-action" onClick={() => setLinks((current) => [...current, ""])} type="button">＋ 新增連結</button>
+    </div>
+  );
 }
 
 export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
@@ -125,6 +194,11 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
 
     const form = new FormData(formElement);
     const ownerValue = joinPeople(form.getAll("owner")) || String(form.get("ownerText") || "");
+    const taskContent = serializeWorkflowContent({
+      taskContent: String(form.get("content") || ""),
+      taskLinks: form.getAll("taskLink").map((link) => String(link)),
+      reportEntries: [],
+    });
     try {
       const response = await fetch("/api/flow", {
         method: "POST",
@@ -136,7 +210,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
           phase: form.get("phase"),
           title: form.get("title"),
           owner: ownerValue,
-          content: form.get("content"),
+          content: taskContent,
           dueDate: form.get("dueDate"),
         }),
       });
@@ -172,11 +246,17 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
 
   async function saveEditedItem(item: WorkflowItem, form: FormData) {
     const ownerValue = joinPeople(form.getAll("owner")) || String(form.get("ownerText") || "");
+    const currentContent = parseWorkflowContent(item);
     await updateItem(item, {
       title: String(form.get("title") || ""),
       phase: String(form.get("phase") || ""),
       owner: ownerValue,
       dueDate: String(form.get("dueDate") || ""),
+      content: serializeWorkflowContent({
+        ...currentContent,
+        taskContent: String(form.get("content") || ""),
+        taskLinks: form.getAll("taskLink").map((link) => String(link)),
+      }),
     });
     setMessage("小關內容已儲存。");
     setEditingItemId(null);
@@ -348,6 +428,10 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                     對應內容
                     <textarea name="content" placeholder="說明這個小關要完成什麼" />
                   </label>
+                  <div className="form-field wide-field">
+                    <span>參考連結</span>
+                    <TaskLinksFields />
+                  </div>
                   <button className="primary-action" disabled={saving} type="submit">
                     {saving ? "新增中" : "建立小關"}
                   </button>
@@ -358,8 +442,9 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                 const overdue = isOverdue(item);
                 const isEditing = editingItemId === item.id;
                 const itemCode = `${phaseNumber}-${itemIndex + 1}`;
-                const itemReportEntries = reportEntries(item);
-                const itemReportLinks = itemReportEntries.filter((entry) => entry.link.trim());
+                const itemContent = parseWorkflowContent(item);
+                const itemReportLinks = itemContent.reportEntries.filter((entry) => entry.link.trim());
+                const itemTaskLinks = itemContent.taskLinks.filter((link) => link.trim());
                 return (
                   <div
                     className={`flow-item ${overdue ? "overdue" : ""} ${draggingItemId === item.id ? "dragging" : ""}`}
@@ -393,23 +478,22 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                     <h3>{item.title}</h3>
                     <div className="compact-meta">
                       <span>指派：{splitPeople(item.owner).join("、") || "未指定"}</span>
-                      <span>文件：{itemReportLinks.length > 0 || item.documentUrl ? "已提供" : "未提供"}</span>
+                      <span>文件：{itemReportLinks.length > 0 || itemTaskLinks.length > 0 || item.documentUrl ? "已提供" : "未提供"}</span>
                       {item.completedAt ? <span>完成：{item.completedAt}</span> : null}
                     </div>
                     <section className="rd-content-preview">
-                      <span>研發填報內容</span>
-                      {itemReportEntries.some((entry) => entry.content.trim()) ? (
-                        itemReportEntries.map((entry, index) =>
-                          entry.content.trim() ? <p key={`${item.id}-pm-preview-${index}`}>{entry.content}</p> : null,
-                        )
-                      ) : (
-                        <p>尚未填寫</p>
-                      )}
+                      <span>要做的內容</span>
+                      <p>{itemContent.taskContent.trim() || "尚未填寫"}</p>
                     </section>
                     <div className="compact-actions">
+                      {itemTaskLinks.slice(0, 2).map((link, index) => (
+                        <a className="doc-link" href={link} key={`${item.id}-task-link-${index}`} rel="noreferrer" target="_blank">
+                          參考連結{itemTaskLinks.length > 1 ? index + 1 : ""}
+                        </a>
+                      ))}
                       {itemReportLinks.slice(0, 2).map((entry, index) => (
-                        <a className="doc-link" href={entry.link} key={`${item.id}-pm-link-${index}`} rel="noreferrer" target="_blank">
-                          開啟文件{itemReportLinks.length > 1 ? index + 1 : ""}
+                        <a className="doc-link" href={entry.link} key={`${item.id}-report-link-${index}`} rel="noreferrer" target="_blank">
+                          成果文件{itemReportLinks.length > 1 ? index + 1 : ""}
                         </a>
                       ))}
                       <button
@@ -460,6 +544,14 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                             期限
                             <input name="dueDate" defaultValue={normalizeDateInput(item.dueDate)} type="date" />
                           </label>
+                          <label className="wide-field">
+                            要做的內容
+                            <textarea name="content" defaultValue={itemContent.taskContent} placeholder="說明這個小關要完成什麼" />
+                          </label>
+                          <div className="form-field wide-field">
+                            <span>參考連結</span>
+                            <TaskLinksFields initialLinks={itemTaskLinks} />
+                          </div>
                           <div className="edit-actions">
                             <button className="danger-action" onClick={() => void deleteItem(item)} type="button">刪除小關</button>
                             <button className="secondary-action" type="submit">儲存小關</button>
