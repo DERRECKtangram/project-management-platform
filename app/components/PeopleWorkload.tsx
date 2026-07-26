@@ -28,6 +28,12 @@ type WorkflowContent = {
   reportsByOwner: Record<string, PersonReport>;
 };
 
+type ReportCard = {
+  item: WorkflowItem;
+  reporter: string;
+  key: string;
+};
+
 function splitOwners(value: string) {
   return (value || "未指定")
     .split(/、|,|，|\r?\n/)
@@ -338,32 +344,46 @@ export function PeopleWorkload() {
   }, [data.projects]);
 
   const scopedItems = useMemo(() => {
-    return data.workflowItems
-      .filter((item) => owner === allOwnersLabel || splitOwners(item.owner).includes(owner))
-      .filter((item) => projectCode === "全部專案" || item.projectCode === projectCode);
-  }, [data.workflowItems, owner, projectCode]);
+    return data.workflowItems.filter((item) => projectCode === "全部專案" || item.projectCode === projectCode);
+  }, [data.workflowItems, projectCode]);
+
+  const reportCards = useMemo<ReportCard[]>(() => {
+    return scopedItems.flatMap((item) => {
+      const assignedOwners = splitOwners(item.owner);
+      const ownersForItem = assignedOwners.length > 0 ? assignedOwners : ["未指定"];
+      return ownersForItem
+        .filter((reporter) => owner === allOwnersLabel || reporter === owner)
+        .map((reporter) => ({
+          item,
+          reporter,
+          key: `${item.id}::${reporter}`,
+        }));
+    });
+  }, [owner, scopedItems]);
 
   const summary = useMemo(() => {
     return {
-      all: scopedItems.length,
-      waiting: scopedItems.filter((item) => summarizeOwnerStatus(item, owner) === "未處理").length,
-      active: scopedItems.filter((item) => summarizeOwnerStatus(item, owner) === "進行中").length,
-      done: scopedItems.filter((item) => summarizeOwnerStatus(item, owner) === "已完成").length,
-      missingDocs: scopedItems.filter((item) => !ownerHasReportLink(item, owner)).length,
+      all: reportCards.length,
+      waiting: reportCards.filter((card) => summarizeOwnerStatus(card.item, card.reporter) === "未處理").length,
+      active: reportCards.filter((card) => summarizeOwnerStatus(card.item, card.reporter) === "進行中").length,
+      done: reportCards.filter((card) => summarizeOwnerStatus(card.item, card.reporter) === "已完成").length,
+      missingDocs: reportCards.filter((card) => !ownerHasReportLink(card.item, card.reporter)).length,
     };
-  }, [owner, scopedItems]);
+  }, [reportCards]);
 
-  const visibleItems = useMemo(() => {
-    return scopedItems
-      .filter((item) => statusFilter === "全部狀態" || summarizeOwnerStatus(item, owner) === statusFilter)
+  const visibleCards = useMemo(() => {
+    return reportCards
+      .filter((card) => statusFilter === "全部狀態" || summarizeOwnerStatus(card.item, card.reporter) === statusFilter)
       .sort((a, b) => {
-        const aStatus = summarizeOwnerStatus(a, owner);
-        const bStatus = summarizeOwnerStatus(b, owner);
+        const aStatus = summarizeOwnerStatus(a.item, a.reporter);
+        const bStatus = summarizeOwnerStatus(b.item, b.reporter);
         if (aStatus === "已完成" && bStatus !== "已完成") return 1;
         if (aStatus !== "已完成" && bStatus === "已完成") return -1;
-        return a.dueDate.localeCompare(b.dueDate);
+        const dueDiff = a.item.dueDate.localeCompare(b.item.dueDate);
+        if (dueDiff !== 0) return dueDiff;
+        return a.reporter.localeCompare(b.reporter);
       });
-  }, [owner, scopedItems, statusFilter]);
+  }, [reportCards, statusFilter]);
 
   const phases = data.phases.length > 0 ? data.phases : defaultPhases;
   const itemCodeById = useMemo(() => {
@@ -469,7 +489,7 @@ export function PeopleWorkload() {
         >
           <span>全部</span>
           <strong>{summary.all}</strong>
-          <small>目前篩選後的小關</small>
+          <small>目前篩選後的填報卡</small>
         </button>
         <button
           className={statusFilter === "未處理" ? "rd-summary-card waiting selected" : "rd-summary-card waiting"}
@@ -505,7 +525,7 @@ export function PeopleWorkload() {
         </button>
       </section>
 
-      {!loading && scopedItems.length === 0 ? (
+      {!loading && reportCards.length === 0 ? (
         <section className="panel empty-state">
           <h2>目前還沒有可填報的小關</h2>
           <p>請先由計畫人員在「專案管理」新增小關，並填入負責窗口。</p>
@@ -515,26 +535,26 @@ export function PeopleWorkload() {
 
       <section className="rd-phase-board">
         {phases.map((phase) => {
-          const phaseItems = visibleItems.filter((item) => item.phase === phase);
+          const phaseCards = visibleCards.filter((card) => card.item.phase === phase);
           return (
             <article className={`rd-phase-column ${phaseClass(phase)}`} key={phase}>
               <header>
                 <span>{phase}</span>
-                <strong>{phaseItems.length}</strong>
+                <strong>{phaseCards.length}</strong>
               </header>
-              {phaseItems.length === 0 ? <p className="plain-copy">目前沒有小關</p> : null}
-              {phaseItems.map((item) => {
-                const itemStatus = summarizeOwnerStatus(item, owner);
+              {phaseCards.length === 0 ? <p className="plain-copy">目前沒有填報卡</p> : null}
+              {phaseCards.map((card) => {
+                const { item, reporter } = card;
+                const itemStatus = summarizeOwnerStatus(item, reporter);
                 const itemStatusClass = statusClass(itemStatus);
-                const isEditing = editingId === item.id;
+                const isEditing = editingId === card.key;
                 const workflowContent = parseWorkflowContent(item);
-                const reportEntries = getOwnerReport(item, owner).entries;
+                const reportEntries = getOwnerReport(item, reporter).entries;
                 const reportLinks = reportEntries.filter((entry) => entry.link.trim());
-                const itemHasLink = ownerHasReportLink(item, owner);
-                const currentReporter = owner === allOwnersLabel ? splitOwners(item.owner).join("、") : owner;
+                const itemHasLink = ownerHasReportLink(item, reporter);
                 const itemCode = itemCodeById.get(item.id) ?? `${phases.indexOf(item.phase) + 1}-?`;
                 return (
-                  <div className={`rd-task-card status-${itemStatusClass}`} key={item.id}>
+                  <div className={`rd-task-card status-${itemStatusClass}`} key={card.key}>
                     <header>
                       <span>{item.projectName}</span>
                       <div className="rd-card-badges">
@@ -544,7 +564,7 @@ export function PeopleWorkload() {
                     </header>
                     <h2>{item.title}</h2>
                     <div className="compact-meta">
-                      <span>{owner === allOwnersLabel ? "指派：" : "填報人："}{currentReporter || "未指定"}</span>
+                      <span>填報人：{reporter || "未指定"}</span>
                       <span>期限：{item.dueDate}</span>
                       <span className={itemHasLink ? "doc-ok" : "doc-missing"}>
                         文件：{itemHasLink ? "已有連結" : "缺文件"}
@@ -579,29 +599,25 @@ export function PeopleWorkload() {
                           開啟文件{reportLinks.length > 1 ? index + 1 : ""}
                         </a>
                       ))}
-                      <button className="secondary-action" onClick={() => setEditingId(isEditing ? "" : item.id)} type="button">
+                      <button className="secondary-action" onClick={() => setEditingId(isEditing ? "" : card.key)} type="button">
                         {isEditing ? "收起" : "編輯"}
                       </button>
                     </div>
                     {isEditing ? (
                       <div className="rd-edit-panel">
-                        {owner === allOwnersLabel ? (
-                          <p className="entry-warning">請先在上方選擇一位填報人員，再編輯個人內容與進度。</p>
-                        ) : (
-                          <ReportEntryEditor
-                            item={item}
-                            onSave={(targetItem, patch) => void updateItem(targetItem, patch)}
-                            reporter={owner}
-                            saving={savingId === item.id}
-                          />
-                        )}
+                        <ReportEntryEditor
+                          item={item}
+                          onSave={(targetItem, patch) => void updateItem(targetItem, patch)}
+                          reporter={reporter}
+                          saving={savingId === item.id}
+                        />
                         <div className="rd-actions">
                           {statuses.map((status) => (
                             <button
                               className={status === itemStatus ? "primary-action" : "secondary-action"}
-                              disabled={savingId === item.id || owner === allOwnersLabel}
+                              disabled={savingId === item.id}
                               key={status}
-                              onClick={() => void updateOwnerStatus(item, owner, status)}
+                              onClick={() => void updateOwnerStatus(item, reporter, status)}
                               type="button"
                             >
                               {status}
