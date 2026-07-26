@@ -128,12 +128,38 @@ function statusFromReports(item: WorkflowItem, content: WorkflowContent) {
   return "未處理";
 }
 
+function statusForOwnerFilter(item: WorkflowItem, content: WorkflowContent, owner: string) {
+  if (owner === "全部填報人") return statusFromReports(item, content);
+  return normalizeStatus(content.reportsByOwner[owner]?.status ?? item.status);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function wordSafeFileName(value: string) {
+  return value.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, "-");
+}
+
 export function ReportSummary() {
   const { data, loading, message } = useFlowData();
   const [projectCode, setProjectCode] = useState("全部專案");
+  const [phaseFilter, setPhaseFilter] = useState("全部階段");
+  const [statusFilter, setStatusFilter] = useState("全部狀態");
+  const [ownerFilter, setOwnerFilter] = useState("全部填報人");
+  const [keyword, setKeyword] = useState("");
 
   const phases = data.phases.length > 0 ? data.phases : ["提案", "啟動", "期中", "期末"];
   const projectOptions = ["全部專案", ...data.projects.map((project) => project.code)];
+  const ownerOptions = useMemo(() => {
+    const names = data.workflowItems.flatMap((item) => splitOwners(item.owner));
+    return ["全部填報人", ...Array.from(new Set(names)).sort((a, b) => a.localeCompare(b))];
+  }, [data.workflowItems]);
 
   const itemCodeById = useMemo(() => {
     const phaseNumberByName = new Map(phases.map((phase, index) => [phase, index + 1]));
@@ -156,8 +182,36 @@ export function ReportSummary() {
   }, [data.projects, data.workflowItems, phases]);
 
   const visibleItems = useMemo(() => {
+    const query = keyword.trim().toLowerCase();
     return data.workflowItems
       .filter((item) => projectCode === "全部專案" || item.projectCode === projectCode)
+      .filter((item) => phaseFilter === "全部階段" || item.phase === phaseFilter)
+      .filter((item) => {
+        const content = parseWorkflowContent(item);
+        const owners = splitOwners(item.owner);
+        const ownerMatched = ownerFilter === "全部填報人" || owners.includes(ownerFilter);
+        const statusMatched = statusFilter === "全部狀態" || statusForOwnerFilter(item, content, ownerFilter) === statusFilter;
+        const searchable = [
+          item.projectCode,
+          item.projectName,
+          item.phase,
+          item.title,
+          item.owner,
+          item.dueDate,
+          content.taskContent,
+          ...content.taskLinks,
+          ...content.reportEntries.flatMap((entry) => [entry.content, entry.link]),
+          ...Object.entries(content.reportsByOwner).flatMap(([person, report]) => [
+            person,
+            report.status,
+            ...report.entries.flatMap((entry) => [entry.content, entry.link]),
+          ]),
+        ]
+          .join(" ")
+          .toLowerCase();
+        const keywordMatched = !query || searchable.includes(query);
+        return ownerMatched && statusMatched && keywordMatched;
+      })
       .sort((a, b) => {
         const aPhase = phases.indexOf(a.phase);
         const bPhase = phases.indexOf(b.phase);
@@ -167,18 +221,122 @@ export function ReportSummary() {
         if (positionDiff !== 0) return positionDiff;
         return (a.createdAt ?? "").localeCompare(b.createdAt ?? "");
       });
-  }, [data.workflowItems, phases, projectCode]);
+  }, [data.workflowItems, keyword, ownerFilter, phaseFilter, phases, projectCode, statusFilter]);
 
   const summary = useMemo(() => {
     const reports = visibleItems.map((item) => ({ item, content: parseWorkflowContent(item) }));
-    const reportCount = reports.reduce((sum, { item }) => sum + Math.max(splitOwners(item.owner).length, 1), 0);
-    const doneCount = reports.filter(({ item, content }) => statusFromReports(item, content) === "已完成").length;
+    const reportCount = reports.reduce((sum, { item }) => {
+      const owners = splitOwners(item.owner);
+      const visibleOwners = ownerFilter === "全部填報人" ? owners : owners.filter((owner) => owner === ownerFilter);
+      return sum + Math.max(visibleOwners.length, 1);
+    }, 0);
+    const doneCount = reports.filter(({ item, content }) => statusForOwnerFilter(item, content, ownerFilter) === "已完成").length;
     const linkCount = reports.reduce((sum, { content }) => {
-      const ownerLinks = Object.values(content.reportsByOwner).flatMap((report) => report.entries).filter((entry) => entry.link.trim()).length;
+      const ownerLinks = Object.entries(content.reportsByOwner)
+        .filter(([owner]) => ownerFilter === "全部填報人" || owner === ownerFilter)
+        .flatMap(([, report]) => report.entries)
+        .filter((entry) => entry.link.trim()).length;
       return sum + content.reportEntries.filter((entry) => entry.link.trim()).length + ownerLinks;
     }, 0);
     return { itemCount: visibleItems.length, reportCount, doneCount, linkCount };
-  }, [visibleItems]);
+  }, [ownerFilter, visibleItems]);
+
+  function downloadWordReport() {
+    const generatedAt = new Date().toLocaleString("zh-TW", { hour12: false });
+    const rows = visibleItems.map((item) => {
+      const content = parseWorkflowContent(item);
+      const owners = splitOwners(item.owner);
+      const visibleOwners = ownerFilter === "全部填報人" ? owners : owners.filter((owner) => owner === ownerFilter);
+      return {
+        item,
+        content,
+        itemCode: itemCodeById.get(item.id) ?? `${phases.indexOf(item.phase) + 1}-?`,
+        owners: visibleOwners.length > 0 ? visibleOwners : ["未指定"],
+      };
+    });
+    const body = rows
+      .map(({ item, content, itemCode, owners }) => {
+        const taskLinks = content.taskLinks.length
+          ? `<ul>${content.taskLinks.map((link) => `<li><a href="${escapeHtml(link)}">${escapeHtml(link)}</a></li>`).join("")}</ul>`
+          : "<p>尚未提供參考連結</p>";
+        const reports = owners
+          .map((owner) => {
+            const report = content.reportsByOwner[owner] ?? { status: normalizeStatus(item.status), entries: content.reportEntries };
+            const entries = report.entries.length > 0 ? report.entries : [{ content: "", link: "" }];
+            return `
+              <h4>${escapeHtml(owner)}｜${escapeHtml(normalizeStatus(report.status))}</h4>
+              ${entries
+                .map(
+                  (entry, index) => `
+                    <p><strong>內容${entries.length > 1 ? index + 1 : ""}：</strong>${escapeHtml(entry.content.trim() || "尚未填寫")}</p>
+                    <p><strong>成果連結${entries.length > 1 ? index + 1 : ""}：</strong>${
+                      entry.link.trim() ? `<a href="${escapeHtml(entry.link)}">${escapeHtml(entry.link)}</a>` : "尚未提供"
+                    }</p>
+                  `,
+                )
+                .join("")}
+            `;
+          })
+          .join("");
+
+        return `
+          <section>
+            <h2>${escapeHtml(itemCode)} ${escapeHtml(item.title)}</h2>
+            <table>
+              <tr><th>專案</th><td>${escapeHtml(item.projectName)} (${escapeHtml(item.projectCode)})</td></tr>
+              <tr><th>階段</th><td>${escapeHtml(item.phase)}</td></tr>
+              <tr><th>期限</th><td>${escapeHtml(item.dueDate || "未指定")}</td></tr>
+              <tr><th>指派</th><td>${escapeHtml(owners.join("、"))}</td></tr>
+              <tr><th>整體狀態</th><td>${escapeHtml(statusFromReports(item, content))}</td></tr>
+            </table>
+            <h3>要做的內容</h3>
+            <p>${escapeHtml(content.taskContent.trim() || "尚未填寫")}</p>
+            <h3>參考連結</h3>
+            ${taskLinks}
+            <h3>研發填報內容</h3>
+            ${reports}
+          </section>
+        `;
+      })
+      .join("");
+
+    const html = `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>成果彙整報告</title>
+          <style>
+            body { color: #0f172a; font-family: "Microsoft JhengHei", Arial, sans-serif; line-height: 1.6; }
+            h1 { font-size: 28px; margin: 0 0 8px; }
+            h2 { border-top: 1px solid #cbd5e1; font-size: 22px; margin-top: 24px; padding-top: 16px; }
+            h3 { color: #1f6feb; font-size: 17px; margin: 16px 0 6px; }
+            h4 { color: #087443; font-size: 16px; margin: 14px 0 4px; }
+            table { border-collapse: collapse; margin: 10px 0; width: 100%; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; vertical-align: top; }
+            th { background: #f1f5f9; width: 120px; }
+            a { color: #1f6feb; }
+          </style>
+        </head>
+        <body>
+          <h1>成果彙整報告</h1>
+          <p>產出時間：${escapeHtml(generatedAt)}</p>
+          <p>篩選：專案 ${escapeHtml(projectCode)}｜階段 ${escapeHtml(phaseFilter)}｜狀態 ${escapeHtml(statusFilter)}｜填報人 ${escapeHtml(ownerFilter)}｜關鍵字 ${escapeHtml(keyword || "無")}</p>
+          <p>小關 ${summary.itemCount} 項｜填報人次 ${summary.reportCount}｜完成小關 ${summary.doneCount} 項｜成果連結 ${summary.linkCount} 筆</p>
+          ${body || "<p>目前沒有符合篩選的成果內容。</p>"}
+        </body>
+      </html>
+    `;
+    const blob = new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${wordSafeFileName(`成果彙整-${projectCode}-${new Date().toISOString().slice(0, 10)}`)}.doc`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div className="summary-stack">
@@ -188,16 +346,51 @@ export function ReportSummary() {
       <section className="panel summary-filter-panel">
         <div>
           <span>彙整篩選</span>
-          <h2>把研發填報內容集中看</h2>
+          <h2>完整呈現研發填報與成果連結</h2>
         </div>
-        <label>
-          專案
-          <select value={projectCode} onChange={(event) => setProjectCode(event.target.value)}>
-            {projectOptions.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
-        </label>
+        <button className="primary-action" disabled={loading} onClick={downloadWordReport} type="button">
+          下載 Word
+        </button>
+        <div className="summary-filter-grid">
+          <label>
+            專案
+            <select value={projectCode} onChange={(event) => setProjectCode(event.target.value)}>
+              {projectOptions.map((option) => (
+                <option key={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            階段
+            <select value={phaseFilter} onChange={(event) => setPhaseFilter(event.target.value)}>
+              <option>全部階段</option>
+              {phases.map((phase) => (
+                <option key={phase}>{phase}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            狀態
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+              <option>全部狀態</option>
+              <option>未處理</option>
+              <option>進行中</option>
+              <option>已完成</option>
+            </select>
+          </label>
+          <label>
+            填報人
+            <select value={ownerFilter} onChange={(event) => setOwnerFilter(event.target.value)}>
+              {ownerOptions.map((option) => (
+                <option key={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+          <label className="summary-search-field">
+            關鍵字
+            <input placeholder="搜尋專案、小關、內容或連結" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+          </label>
+        </div>
       </section>
 
       <section className="summary-metrics">
@@ -231,6 +424,7 @@ export function ReportSummary() {
         {visibleItems.map((item) => {
           const content = parseWorkflowContent(item);
           const owners = splitOwners(item.owner);
+          const visibleOwners = ownerFilter === "全部填報人" ? owners : owners.filter((owner) => owner === ownerFilter);
           const itemCode = itemCodeById.get(item.id) ?? `${phases.indexOf(item.phase) + 1}-?`;
           const itemStatus = statusFromReports(item, content);
           return (
@@ -242,9 +436,17 @@ export function ReportSummary() {
                 </div>
                 <div className="summary-card-badges">
                   <b>{item.phase}</b>
+                  <b>期限 {item.dueDate || "未指定"}</b>
                   <strong className={itemStatus === "已完成" ? "done" : itemStatus === "進行中" ? "active" : "waiting"}>{itemStatus}</strong>
                 </div>
               </header>
+
+              <div className="summary-meta-grid">
+                <span>專案代號：{item.projectCode}</span>
+                <span>指派：{(visibleOwners.length > 0 ? visibleOwners : ["未指定"]).join("、")}</span>
+                <span>原始狀態：{item.status}</span>
+                <span>完成日：{item.completedAt || "未完成"}</span>
+              </div>
 
               <section className="task-content-preview">
                 <span>要做的內容</span>
@@ -261,7 +463,7 @@ export function ReportSummary() {
               </section>
 
               <div className="summary-report-grid">
-                {(owners.length > 0 ? owners : ["未指定"]).map((owner) => {
+                {(visibleOwners.length > 0 ? visibleOwners : ["未指定"]).map((owner) => {
                   const report = content.reportsByOwner[owner] ?? { status: normalizeStatus(item.status), entries: content.reportEntries };
                   const entries = report.entries.length > 0 ? report.entries : [{ content: "", link: "" }];
                   return (

@@ -2031,10 +2031,10 @@ select {
 }
 
 .summary-filter-panel {
-  align-items: end;
+  align-items: start;
   display: grid;
   gap: 18px;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .summary-filter-panel span {
@@ -2057,6 +2057,17 @@ select {
   font-size: 13px;
   font-weight: 900;
   gap: 7px;
+}
+
+.summary-filter-grid {
+  display: grid;
+  gap: 12px;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.summary-search-field {
+  grid-column: span 2;
 }
 
 .summary-metrics {
@@ -2153,6 +2164,31 @@ select {
   font-weight: 900;
   padding: 7px 10px;
   white-space: nowrap;
+}
+
+.summary-meta-grid {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 12px;
+}
+
+.summary-meta-grid span {
+  color: #475467;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.summary-list .task-content-preview p,
+.summary-list .rd-content-preview p {
+  -webkit-line-clamp: unset;
+  display: block;
+  overflow: visible;
+  white-space: pre-wrap;
 }
 
 .summary-card-badges strong.done,
@@ -2880,9 +2916,15 @@ select {
   .light-people-grid,
   .meeting-form,
   .summary-filter-panel,
+  .summary-filter-grid,
   .summary-metrics,
+  .summary-meta-grid,
   .summary-report-grid {
     grid-template-columns: 1fr;
+  }
+
+  .summary-search-field {
+    grid-column: auto;
   }
 
   .meeting-card {
