@@ -3,36 +3,36 @@ import { AppShell } from "../components/AppShell";
 const roles = [
   {
     name: "專案管理人員",
-    duty: "建立案件、安排會議、把決議轉成任務、追蹤附件與跨部門進度。",
-    permissions: ["建立案件", "新增會議紀錄", "分派任務", "彙整報告"],
+    duty: "建立專案、拆分四階段小關、指定負責窗口與期限，追蹤目前卡在哪一關。",
+    permissions: ["建立專案", "新增小關", "分配窗口", "追蹤進度"],
   },
   {
-    name: "開發人員",
-    duty: "接收被分派的技術任務，回報成果、測試數據、截圖、設備需求與委員問題回覆。",
-    permissions: ["更新任務", "上傳佐證", "回覆缺口", "確認技術成果"],
+    name: "研發人員",
+    duty: "查看自己被分配的小關，填寫研發內容、更新狀態，並貼上成果文件連結。",
+    permissions: ["查看任務", "填寫內容", "更新狀態", "貼上文件"],
   },
   {
     name: "管理層",
-    duty: "確認方向、資源、預算、重大風險與關卡是否可進入下一步。",
-    permissions: ["核准關卡", "解除風險", "確認資源", "封存版本"],
+    duty: "查看專案是否持續推進、資源是否足夠，以及重要成果是否已補齊。",
+    permissions: ["查看進度", "確認資源", "檢查缺口", "封存成果"],
   },
 ];
 
 const rules = [
-  "每次會議紀錄必須連到案件、關卡、負責人與下次追蹤日期。",
-  "會議決議不能只留文字，必須轉成至少一項任務或明確標示無後續行動。",
-  "開發人員只需要看到自己被分派的任務、期限、需交付成果與相關附件。",
-  "專案管理人員需要看到所有卡點、逾期項、附件缺口與誰正在處理。",
-  "只有完成當關主要任務與完成條件，才能進入下一關。",
+  "每個專案都要拆成提案、啟動、期中、期末四個階段。",
+  "每個小關都要有負責窗口、內容說明、結束日期與目前狀態。",
+  "研發人員只需要填自己負責的小關，狀態只保留未處理、進行中、已完成。",
+  "完成後要貼上 Google 文件或雲端成果連結，方便計畫人員確認方向。",
+  "只有必要成果與文件都補齊後，才視為該階段可以往下一步推進。",
 ];
 
 export default function SettingsPage() {
   return (
     <AppShell
       active="/settings"
-      eyebrow="角色與規則"
-      title="讓不同人進入後看到不同責任"
-      actions={<button className="secondary-action">調整設定</button>}
+      eyebrow="設定"
+      title="角色與流程規則"
+      actions={<a className="secondary-action" href="/projects">回專案管理</a>}
     >
       <section className="role-grid">
         {roles.map((role) => (
@@ -52,7 +52,7 @@ export default function SettingsPage() {
         <div className="section-title compact">
           <div>
             <p>流程規則</p>
-            <h2>避免會議後沒有人知道下一步</h2>
+            <h2>讓專案管理與研發填報維持簡單一致</h2>
           </div>
         </div>
         {rules.map((rule, index) => (

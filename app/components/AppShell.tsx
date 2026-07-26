@@ -5,8 +5,6 @@ const navItems = [
   { href: "/", label: "首頁", icon: "首" },
   { href: "/projects", label: "專案管理", icon: "管" },
   { href: "/people", label: "研發填報", icon: "研" },
-  { href: "/meetings", label: "會議紀錄", icon: "會" },
-  { href: "/reports", label: "進度報告", icon: "報" },
   { href: "/settings", label: "設定", icon: "設" },
 ];
 
