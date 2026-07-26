@@ -9,7 +9,7 @@ const navItems = [
 
 type AppShellProps = {
   active: string;
-  title: string;
+  title?: string;
   eyebrow: string;
   actions?: ReactNode;
   children: ReactNode;
@@ -47,7 +47,7 @@ export function AppShell({ active, title, eyebrow, actions, children }: AppShell
         <header className="page-header">
           <div>
             <p>{eyebrow}</p>
-            <h1>{title}</h1>
+            {title ? <h1>{title}</h1> : null}
           </div>
           {actions ? <div className="page-actions">{actions}</div> : null}
         </header>

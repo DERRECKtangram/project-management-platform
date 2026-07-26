@@ -88,7 +88,6 @@ export function PeopleWorkload() {
       <section className="rd-toolbar panel">
         <div>
           <p>篩選填報內容</p>
-          <h2>用顏色快速看出目前卡在哪裡</h2>
         </div>
         <div className="rd-filter-controls">
           <label>
