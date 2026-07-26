@@ -1189,7 +1189,15 @@ select {
   align-content: start;
   display: grid;
   gap: 12px;
+  min-height: 260px;
   padding: 14px;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.flow-phase.drop-ready {
+  border-color: rgba(31, 111, 235, 0.45);
+  box-shadow: inset 0 0 0 2px rgba(31, 111, 235, 0.16), 0 18px 38px rgba(31, 111, 235, 0.12);
+  transform: translateY(-2px);
 }
 
 .flow-phase header {
@@ -1206,9 +1214,20 @@ select {
 }
 
 .flow-item {
+  cursor: grab;
   display: grid;
   gap: 9px;
   padding: 12px;
+  transition: opacity 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.flow-item:active {
+  cursor: grabbing;
+}
+
+.flow-item.dragging {
+  opacity: 0.48;
+  transform: scale(0.98);
 }
 
 .flow-item-head {
@@ -1216,6 +1235,24 @@ select {
   display: flex;
   gap: 10px;
   justify-content: space-between;
+}
+
+.flow-item-idline {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.flow-item-idline strong {
+  background: var(--nav);
+  border-radius: 8px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 7px 8px;
 }
 
 .flow-item-head b {

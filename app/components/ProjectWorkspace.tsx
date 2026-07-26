@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type DragEvent, type FormEvent } from "react";
 import type { WorkflowItem } from "./flowTypes";
 import { useFlowData } from "./useFlowData";
 
@@ -42,6 +42,8 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
   const [phase, setPhase] = useState("提案");
   const [saving, setSaving] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
+  const [dropPhase, setDropPhase] = useState<string | null>(null);
 
   const project = data.projects.find((item) => item.code === code);
   const items = useMemo(
@@ -116,6 +118,19 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
     });
     setMessage("小關內容已儲存。");
     setEditingItemId(null);
+  }
+
+  async function moveItemToPhase(event: DragEvent<HTMLElement>, targetPhase: string) {
+    event.preventDefault();
+    const itemId = event.dataTransfer.getData("text/plain") || draggingItemId;
+    const item = items.find((workflowItem) => workflowItem.id === itemId);
+    setDropPhase(null);
+    setDraggingItemId(null);
+    if (!item || item.phase === targetPhase) return;
+
+    setEditingItemId(null);
+    await updateItem(item, { phase: targetPhase });
+    setMessage(`已移到「${targetPhase}」。`);
   }
 
   if (loading) {
@@ -205,20 +220,47 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
       <section className="flow-board">
         {data.phases.map((itemPhase) => {
           const phaseItems = items.filter((item) => item.phase === itemPhase);
+          const phaseNumber = data.phases.indexOf(itemPhase) + 1;
           return (
-            <article className={`flow-phase ${phaseClass(itemPhase)}`} key={itemPhase}>
+            <article
+              className={`flow-phase ${phaseClass(itemPhase)} ${dropPhase === itemPhase ? "drop-ready" : ""}`}
+              key={itemPhase}
+              onDragLeave={() => setDropPhase(null)}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDropPhase(itemPhase);
+              }}
+              onDrop={(event) => void moveItemToPhase(event, itemPhase)}
+            >
               <header className="phase-header">
                 <span>{itemPhase}</span>
                 <strong>{phaseItems.filter((item) => item.status === "已完成").length}/{phaseItems.length}</strong>
               </header>
               {phaseItems.length === 0 ? <p className="plain-copy">尚未新增小關</p> : null}
-              {phaseItems.map((item) => {
+              {phaseItems.map((item, itemIndex) => {
                 const overdue = isOverdue(item);
                 const isEditing = editingItemId === item.id;
+                const itemCode = `${phaseNumber}-${itemIndex + 1}`;
                 return (
-                  <div className={`flow-item ${overdue ? "overdue" : ""}`} key={item.id}>
+                  <div
+                    className={`flow-item ${overdue ? "overdue" : ""} ${draggingItemId === item.id ? "dragging" : ""}`}
+                    draggable={!isEditing}
+                    key={item.id}
+                    onDragEnd={() => {
+                      setDraggingItemId(null);
+                      setDropPhase(null);
+                    }}
+                    onDragStart={(event) => {
+                      setDraggingItemId(item.id);
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", item.id);
+                    }}
+                  >
                     <div className="flow-item-head">
-                      <span>{item.role}</span>
+                      <div className="flow-item-idline">
+                        <strong>{itemCode}</strong>
+                        <span>{item.role}</span>
+                      </div>
                       <div className="flow-status-line">
                         <b className={statusClass(item.status)}>{item.status}</b>
                         <strong className={`due-pill ${overdue ? "overdue" : ""}`}>期限 {item.dueDate}</strong>
