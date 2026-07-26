@@ -7,7 +7,7 @@ const phases = ["提案", "啟動", "期中", "期末"];
 const doneStatus = "已完成";
 
 type FlowPayload = {
-  action?: "create-project" | "create-item" | "reorder-items";
+  action?: "create-project" | "update-project" | "delete-project" | "create-item" | "reorder-items";
   projectCode?: string;
   projectName?: string;
   agency?: string;
@@ -44,7 +44,7 @@ function normalizeStatus(status?: string) {
 function encodeDevelopers(value?: string) {
   return JSON.stringify(
     (value ?? "")
-      .split(/、|,|\r?\n/)
+      .split(/、|,|，|\r?\n/)
       .map((item) => item.trim())
       .filter(Boolean),
   );
@@ -234,6 +234,45 @@ export async function PATCH(request: Request) {
     const db = await getFlowDb();
     const payload = (await request.json()) as FlowPayload;
 
+    if (payload.action === "update-project") {
+      const projectCode = payload.projectCode?.trim();
+      const name = payload.projectName?.trim();
+      if (!projectCode || !name) {
+        return Response.json({ error: "專案代號與名稱必填。" }, { status: 400 });
+      }
+
+      const existing = await db
+        .select()
+        .from(schema.projects)
+        .where(eq(schema.projects.code, projectCode))
+        .get();
+
+      if (!existing) {
+        return Response.json({ error: "找不到專案。" }, { status: 404 });
+      }
+
+      const [project] = await db
+        .update(schema.projects)
+        .set({
+          name,
+          agency: payload.agency?.trim() || "未指定",
+          manager: payload.manager?.trim() || "未指定",
+          developers: encodeDevelopers(payload.developers),
+          due: payload.due?.trim() || "未指定",
+          budget: payload.budget?.trim() || "未指定",
+        })
+        .where(eq(schema.projects.code, projectCode))
+        .returning();
+
+      await db
+        .update(schema.workflowItems)
+        .set({ projectName: name })
+        .where(eq(schema.workflowItems.projectCode, projectCode));
+
+      await updateProjectRollup(projectCode);
+      return Response.json({ project: { ...project, developers: decodeDevelopers(project.developers) } });
+    }
+
     if (payload.action === "reorder-items") {
       const updates = (payload.items ?? []).filter((item) => item.id && phases.includes(item.phase));
       if (updates.length === 0) {
@@ -324,6 +363,29 @@ export async function DELETE(request: Request) {
   try {
     const db = await getFlowDb();
     const payload = (await request.json()) as FlowPayload;
+
+    if (payload.action === "delete-project") {
+      const projectCode = payload.projectCode?.trim();
+      if (!projectCode) {
+        return Response.json({ error: "專案代號必填。" }, { status: 400 });
+      }
+
+      const existing = await db
+        .select()
+        .from(schema.projects)
+        .where(eq(schema.projects.code, projectCode))
+        .get();
+
+      if (!existing) {
+        return Response.json({ error: "找不到專案。" }, { status: 404 });
+      }
+
+      await db.delete(schema.workflowItems).where(eq(schema.workflowItems.projectCode, projectCode));
+      await db.delete(schema.projects).where(eq(schema.projects.code, projectCode));
+
+      return Response.json({ ok: true });
+    }
+
     const id = payload.id?.trim();
 
     if (!id) {
