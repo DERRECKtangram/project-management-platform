@@ -367,6 +367,38 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
     setMessage(item.phase === targetPhase ? "小關順序已更新。" : `已移到「${targetPhase}」。`);
   }
 
+  async function reorderItemWithinPhase(item: WorkflowItem, direction: "up" | "down") {
+    const phaseItems = sortedItems.filter((workflowItem) => workflowItem.phase === item.phase);
+    const currentIndex = phaseItems.findIndex((workflowItem) => workflowItem.id === item.id);
+    const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= phaseItems.length) return;
+
+    const reorderedItems = [...phaseItems];
+    const [movedItem] = reorderedItems.splice(currentIndex, 1);
+    reorderedItems.splice(nextIndex, 0, movedItem);
+
+    const response = await fetch("/api/flow", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "reorder-items",
+        items: reorderedItems.map((workflowItem, index) => ({
+          id: workflowItem.id,
+          phase: item.phase,
+          position: (index + 1) * 1000,
+        })),
+      }),
+    });
+    const result = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setMessage(result.error || "調整小關順序失敗");
+      return;
+    }
+    setEditingItemId(null);
+    await refresh();
+    setMessage(direction === "up" ? "小關已上移。" : "小關已下移。");
+  }
+
   if (loading) {
     return <p className="plain-copy">讀取專案工作台中...</p>;
   }
@@ -484,6 +516,8 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                 const overdue = isOverdue(item);
                 const isEditing = editingItemId === item.id;
                 const itemCode = `${phaseNumber}-${itemIndex + 1}`;
+                const canMoveUp = itemIndex > 0;
+                const canMoveDown = itemIndex < phaseItems.length - 1;
                 const itemContent = parseWorkflowContent(item);
                 const itemReportLinks = [
                   ...itemContent.reportEntries,
@@ -514,6 +548,26 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                     <div className="flow-item-head">
                       <div className="flow-item-idline">
                         <strong>{itemCode}</strong>
+                        <div className="flow-order-actions" aria-label="調整小關順序">
+                          <button
+                            aria-label={`上移 ${item.title}`}
+                            disabled={!canMoveUp || isEditing}
+                            onClick={() => void reorderItemWithinPhase(item, "up")}
+                            title="上移"
+                            type="button"
+                          >
+                            上移
+                          </button>
+                          <button
+                            aria-label={`下移 ${item.title}`}
+                            disabled={!canMoveDown || isEditing}
+                            onClick={() => void reorderItemWithinPhase(item, "down")}
+                            title="下移"
+                            type="button"
+                          >
+                            下移
+                          </button>
+                        </div>
                       </div>
                       <div className="flow-status-line">
                         <b className={statusClass(item.status)}>{item.status}</b>
