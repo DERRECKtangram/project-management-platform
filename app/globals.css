@@ -1467,6 +1467,145 @@ select {
   font-weight: 900;
 }
 
+.document-workspace {
+  display: grid;
+  gap: 16px;
+}
+
+.document-actions {
+  align-items: stretch;
+  display: grid;
+  gap: 10px;
+}
+
+.document-detail-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.7fr);
+}
+
+.document-main-card,
+.document-side-card {
+  display: grid;
+  gap: 16px;
+}
+
+.compact-title {
+  margin-bottom: 0;
+}
+
+.document-link-box,
+.document-summary {
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.document-link-box {
+  background: #f5f8ff;
+  border: 1px solid #cfe1ff;
+}
+
+.document-link-box span,
+.document-summary span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.document-link-box a {
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.document-summary {
+  background: #f7fff9;
+  border: 1px solid #c7f0d7;
+}
+
+.document-summary p {
+  color: var(--text);
+  line-height: 1.65;
+  margin: 0;
+}
+
+.document-side-card h2 {
+  color: var(--ink);
+  font-size: 20px;
+  margin: 0;
+}
+
+.document-side-card dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.document-side-card dl div {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 72px minmax(0, 1fr);
+}
+
+.document-side-card dt {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.document-side-card dd {
+  color: var(--ink);
+  font-weight: 800;
+  margin: 0;
+}
+
+.document-related {
+  display: grid;
+  gap: 14px;
+}
+
+.document-related > div:last-child {
+  display: grid;
+  gap: 8px;
+}
+
+.document-related a {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 10px 12px;
+}
+
+.document-related a.active {
+  background: #f5f8ff;
+  border-color: #9cc7ff;
+}
+
+.document-related strong {
+  background: var(--nav);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 13px;
+  padding: 6px 8px;
+}
+
+.document-related span {
+  font-weight: 900;
+}
+
+.document-related small {
+  color: var(--muted);
+  font-weight: 900;
+}
+
 .role-card div {
   display: flex;
   flex-wrap: wrap;
@@ -2086,6 +2225,7 @@ select {
   .home-actions,
   .dashboard-grid,
   .project-hero,
+  .document-detail-grid,
   .project-board,
   .gate-lanes,
   .role-entry-grid,

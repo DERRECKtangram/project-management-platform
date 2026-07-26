@@ -332,9 +332,9 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                     </section>
                     <div className="compact-actions">
                       {item.documentUrl ? (
-                        <a className="doc-link" href={item.documentUrl} rel="noreferrer" target="_blank">
+                        <Link className="doc-link" href={`/projects/${encodeURIComponent(project.code)}/documents/${encodeURIComponent(item.id)}`}>
                           開啟文件
-                        </a>
+                        </Link>
                       ) : null}
                       <button
                         className="secondary-action"
