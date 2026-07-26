@@ -1,33 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useFlowData } from "./useFlowData";
-
-const riskOptions = ["低", "中", "高"];
 
 export function ProjectListManager() {
   const { data, loading, message, setMessage, refresh } = useFlowData();
-  const [query, setQuery] = useState("");
-  const [stage, setStage] = useState("全部");
   const [saving, setSaving] = useState(false);
-
-  const filteredProjects = useMemo(() => {
-    const keyword = query.trim().toLowerCase();
-    return data.projects.filter((project) => {
-      const matchesStage = stage === "全部" || project.stage === stage;
-      const haystack = [
-        project.code,
-        project.name,
-        project.agency,
-        project.manager,
-        project.developers.join("、"),
-      ]
-        .join(" ")
-        .toLowerCase();
-      return matchesStage && (!keyword || haystack.includes(keyword));
-    });
-  }, [data.projects, query, stage]);
 
   async function createProject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,7 +28,6 @@ export function ProjectListManager() {
           developers: form.get("developers"),
           due: form.get("due"),
           budget: form.get("budget"),
-          risk: form.get("risk"),
         }),
       });
       const result = (await response.json()) as { error?: string };
@@ -105,16 +83,6 @@ export function ProjectListManager() {
             預算
             <input name="budget" placeholder="例如 300 萬" />
           </label>
-          <label>
-            風險
-            <select name="risk" defaultValue="中">
-              {riskOptions.map((risk) => (
-                <option key={risk} value={risk}>
-                  {risk}
-                </option>
-              ))}
-            </select>
-          </label>
           <button className="primary-action" disabled={saving} type="submit">
             {saving ? "建立中" : "建立專案"}
           </button>
@@ -123,29 +91,8 @@ export function ProjectListManager() {
       </section>
 
       <section className="panel">
-        <div className="section-title">
-          <div>
-            <p>專案清單</p>
-            <h2>點進專案後管理提案、啟動、期中、期末</h2>
-          </div>
-        </div>
-        <div className="toolbar">
-          <input
-            aria-label="搜尋專案"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="搜尋專案、代號、PM、研發"
-            value={query}
-          />
-          <select aria-label="篩選階段" onChange={(event) => setStage(event.target.value)} value={stage}>
-            <option>全部</option>
-            {data.phases.map((phase) => (
-              <option key={phase}>{phase}</option>
-            ))}
-          </select>
-        </div>
-
         {loading ? <p className="plain-copy">讀取專案中...</p> : null}
-        {!loading && filteredProjects.length === 0 ? (
+        {!loading && data.projects.length === 0 ? (
           <div className="empty-state">
             <h2>目前沒有正式專案</h2>
             <p>請先建立一個主案件，之後每個專案可以自由新增四階段底下的小關。</p>
@@ -153,14 +100,13 @@ export function ProjectListManager() {
         ) : null}
 
         <div className="project-board">
-          {filteredProjects.map((project) => {
+          {data.projects.map((project) => {
             const items = data.workflowItems.filter((item) => item.projectCode === project.code);
             const done = items.filter((item) => item.status === "已完成").length;
             return (
               <Link className="project-detail-card clickable-card" href={`/projects/${encodeURIComponent(project.code)}`} key={project.code}>
                 <div className="card-head">
                   <span>{project.code}</span>
-                  <b className={`risk-pill risk-${project.risk}`}>風險 {project.risk}</b>
                 </div>
                 <h2>{project.name}</h2>
                 <p>{project.agency}</p>

@@ -59,19 +59,6 @@ export function PeopleWorkload() {
       });
   }, [scopedItems, statusFilter]);
 
-  const people = useMemo(() => {
-    const map = new Map<string, { name: string; total: number; done: number; missingDocs: number }>();
-    data.workflowItems.forEach((item) => {
-      const name = item.owner || "未指定";
-      const current = map.get(name) ?? { name, total: 0, done: 0, missingDocs: 0 };
-      current.total += 1;
-      if (item.status === "已完成") current.done += 1;
-      if (!item.documentUrl) current.missingDocs += 1;
-      map.set(name, current);
-    });
-    return [...map.values()].sort((a, b) => b.total - a.total);
-  }, [data.workflowItems]);
-
   async function updateItem(item: WorkflowItem, patch: Partial<WorkflowItem>) {
     setSavingId(item.id);
     setMessage("");
@@ -169,33 +156,13 @@ export function PeopleWorkload() {
         </button>
       </section>
 
-      {!loading && people.length === 0 ? (
+      {!loading && scopedItems.length === 0 ? (
         <section className="panel empty-state">
           <h2>目前還沒有可填報的小關</h2>
           <p>請先由計畫人員在「專案管理」新增小關，並填入負責窗口。</p>
           <Link className="primary-action" href="/projects">前往專案管理</Link>
         </section>
       ) : null}
-
-      <section className="people-grid light-people-grid">
-        {people.map((person) => (
-          <button
-            className={owner === person.name ? "person-card selected-person" : "person-card"}
-            key={person.name}
-            onClick={() => setOwner(person.name)}
-            type="button"
-          >
-            <div className="person-avatar">{person.name.slice(0, 1)}</div>
-            <span>研發窗口</span>
-            <h2>{person.name}</h2>
-            <p>{person.done}/{person.total} 小關完成</p>
-            <footer>
-              <b>{person.total - person.done} 未完成</b>
-              <strong>{person.missingDocs} 缺文件</strong>
-            </footer>
-          </button>
-        ))}
-      </section>
 
       <section className="rd-board">
         {visibleItems.map((item) => {
