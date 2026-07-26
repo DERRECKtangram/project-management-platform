@@ -5,34 +5,43 @@ import { useMemo, useState } from "react";
 import type { WorkflowItem } from "./flowTypes";
 import { useFlowData } from "./useFlowData";
 
-const statuses = ["待處理", "進行中", "待確認", "已完成"];
+const statuses = ["未處理", "進行中", "已完成"];
 
 function statusClass(status: string) {
   if (status === "已完成") return "done";
   if (status === "進行中") return "active";
-  if (status === "待確認") return "risk";
   return "waiting";
 }
 
 export function PeopleWorkload() {
   const { data, loading, message, setMessage, refresh } = useFlowData();
-  const [owner, setOwner] = useState("全部");
+  const [owner, setOwner] = useState("全部窗口");
+  const [projectCode, setProjectCode] = useState("全部專案");
   const [savingId, setSavingId] = useState("");
 
   const owners = useMemo(() => {
     const names = data.workflowItems.map((item) => item.owner || "未指定");
-    return ["全部", ...Array.from(new Set(names))];
+    return ["全部窗口", ...Array.from(new Set(names))];
   }, [data.workflowItems]);
+
+  const projectOptions = useMemo(() => {
+    return ["全部專案", ...data.projects.map((project) => project.code)];
+  }, [data.projects]);
+
+  const projectNameByCode = useMemo(() => {
+    return new Map(data.projects.map((project) => [project.code, project.name]));
+  }, [data.projects]);
 
   const visibleItems = useMemo(() => {
     return data.workflowItems
-      .filter((item) => owner === "全部" || item.owner === owner)
+      .filter((item) => owner === "全部窗口" || item.owner === owner)
+      .filter((item) => projectCode === "全部專案" || item.projectCode === projectCode)
       .sort((a, b) => {
         if (a.status === "已完成" && b.status !== "已完成") return 1;
         if (a.status !== "已完成" && b.status === "已完成") return -1;
         return a.dueDate.localeCompare(b.dueDate);
       });
-  }, [data.workflowItems, owner]);
+  }, [data.workflowItems, owner, projectCode]);
 
   const people = useMemo(() => {
     const map = new Map<string, { name: string; total: number; done: number; missingDocs: number }>();
@@ -75,14 +84,29 @@ export function PeopleWorkload() {
 
       <section className="rd-toolbar panel">
         <div>
-          <p>選擇窗口</p>
-          <h2>研發只需要看自己被分配的小關</h2>
+          <p>篩選填報內容</p>
+          <h2>先選專案，再選窗口，只留下需要處理的小關</h2>
         </div>
-        <select aria-label="選擇負責窗口" onChange={(event) => setOwner(event.target.value)} value={owner}>
-          {owners.map((name) => (
-            <option key={name}>{name}</option>
-          ))}
-        </select>
+        <div className="rd-filter-controls">
+          <label>
+            專案
+            <select aria-label="選擇專案" onChange={(event) => setProjectCode(event.target.value)} value={projectCode}>
+              {projectOptions.map((code) => (
+                <option key={code} value={code}>
+                  {code === "全部專案" ? code : projectNameByCode.get(code) ?? code}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            窗口
+            <select aria-label="選擇負責窗口" onChange={(event) => setOwner(event.target.value)} value={owner}>
+              {owners.map((name) => (
+                <option key={name}>{name}</option>
+              ))}
+            </select>
+          </label>
+        </div>
       </section>
 
       {!loading && people.length === 0 ? (
@@ -106,7 +130,7 @@ export function PeopleWorkload() {
             <h2>{person.name}</h2>
             <p>{person.done}/{person.total} 小關完成</p>
             <footer>
-              <b>{person.total - person.done} 待填</b>
+              <b>{person.total - person.done} 未完成</b>
               <strong>{person.missingDocs} 缺文件</strong>
             </footer>
           </button>
@@ -120,8 +144,20 @@ export function PeopleWorkload() {
               <span>{item.projectName}</span>
               <b className={statusClass(item.status)}>{item.status}</b>
             </header>
+            <div className={`rd-phase-badge ${statusClass(item.status)}`}>{item.phase}</div>
             <h2>{item.title}</h2>
-            <p>{item.content}</p>
+            <label>
+              研發填報內容
+              <textarea
+                defaultValue={item.content === "待補內容" ? "" : item.content}
+                onBlur={(event) => {
+                  if (event.currentTarget.value !== item.content) {
+                    void updateItem(item, { content: event.currentTarget.value });
+                  }
+                }}
+                placeholder="寫下目前完成內容、討論結論、測試結果或需要 PM 知道的方向"
+              />
+            </label>
             <dl>
               <div>
                 <dt>階段</dt>

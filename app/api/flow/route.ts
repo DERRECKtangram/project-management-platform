@@ -4,6 +4,7 @@ import * as schema from "../../../db/schema";
 import { ensureSeedData, newId, routeError } from "../shared";
 
 const phases = ["提案", "啟動", "期中", "期末"];
+const doneStatus = "已完成";
 
 type FlowPayload = {
   action?: "create-project" | "create-item";
@@ -25,6 +26,12 @@ type FlowPayload = {
   status?: string;
   documentUrl?: string;
 };
+
+function normalizeStatus(status?: string) {
+  if (status === "已完成") return "已完成";
+  if (status === "進行中" || status === "待確認") return "進行中";
+  return "未處理";
+}
 
 function encodeDevelopers(value?: string) {
   return JSON.stringify(
@@ -56,10 +63,10 @@ async function updateProjectRollup(projectCode: string) {
     .from(schema.workflowItems)
     .where(eq(schema.workflowItems.projectCode, projectCode));
 
-  const doneCount = items.filter((item) => item.status === "已完成").length;
+  const doneCount = items.filter((item) => normalizeStatus(item.status) === doneStatus).length;
   const progress = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
-  const firstOpen = items.find((item) => item.status !== "已完成");
-  const lastDone = [...items].reverse().find((item) => item.status === "已完成");
+  const firstOpen = items.find((item) => normalizeStatus(item.status) !== doneStatus);
+  const lastDone = [...items].reverse().find((item) => normalizeStatus(item.status) === doneStatus);
   const stage = firstOpen?.phase ?? lastDone?.phase ?? "提案";
   const nextAction = firstOpen ? `${firstOpen.phase}：${firstOpen.title}` : "所有小關已完成，準備結案封存";
 
@@ -83,7 +90,10 @@ export async function GET() {
         ...project,
         developers: decodeDevelopers(project.developers),
       })),
-      workflowItems,
+      workflowItems: workflowItems.map((item) => ({
+        ...item,
+        status: normalizeStatus(item.status),
+      })),
     });
   } catch (error) {
     return Response.json({ error: routeError(error) }, { status: 500 });
@@ -142,7 +152,7 @@ export async function POST(request: Request) {
           role: payload.role?.trim() || "專案管理人員",
           content: payload.content?.trim() || "待補內容",
           dueDate: payload.dueDate?.trim() || "未指定",
-          status: "待處理",
+          status: "未處理",
           documentUrl: payload.documentUrl?.trim() || "",
           completedAt: "",
         })
@@ -180,14 +190,19 @@ export async function PATCH(request: Request) {
 
     const status = payload.status?.trim();
     const documentUrl = payload.documentUrl?.trim();
+    const content = payload.content?.trim();
     const update: Partial<typeof schema.workflowItems.$inferInsert> = {};
 
     if (status) {
-      update.status = status;
-      update.completedAt = status === "已完成" ? new Date().toISOString().slice(0, 10) : "";
+      const normalizedStatus = normalizeStatus(status);
+      update.status = normalizedStatus;
+      update.completedAt = normalizedStatus === doneStatus ? new Date().toISOString().slice(0, 10) : "";
     }
     if (documentUrl !== undefined) {
       update.documentUrl = documentUrl;
+    }
+    if (content !== undefined) {
+      update.content = content || "待補內容";
     }
 
     const [item] = await db
@@ -197,7 +212,7 @@ export async function PATCH(request: Request) {
       .returning();
 
     await updateProjectRollup(existing.projectCode);
-    return Response.json({ item });
+    return Response.json({ item: { ...item, status: normalizeStatus(item.status) } });
   } catch (error) {
     return Response.json({ error: routeError(error) }, { status: 500 });
   }

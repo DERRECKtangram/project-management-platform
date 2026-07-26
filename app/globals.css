@@ -1711,6 +1711,71 @@ select {
   background: rgba(255, 255, 255, 0.82);
 }
 
+.risk-低 {
+  background: #dcfae6;
+  color: var(--green);
+}
+
+.risk-中 {
+  background: #dbeafe;
+  color: var(--blue);
+}
+
+.risk-高 {
+  background: #fff0d3;
+  color: var(--amber);
+}
+
+.rd-filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.rd-filter-controls label {
+  color: var(--muted);
+  display: grid;
+  font-size: 12px;
+  font-weight: 900;
+  gap: 6px;
+}
+
+.rd-task-card textarea {
+  background: #fbfdff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  line-height: 1.55;
+  margin-top: 6px;
+  min-height: 116px;
+  padding: 10px 12px;
+  resize: vertical;
+  width: 100%;
+}
+
+.rd-phase-badge {
+  border-radius: 8px;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 900;
+  justify-self: start;
+  padding: 7px 10px;
+}
+
+.phase-header span {
+  color: var(--ink);
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.phase-header strong {
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  color: var(--ink);
+  padding: 6px 10px;
+}
+
 @media (max-width: 1180px) {
   .metric-grid,
   .report-grid {

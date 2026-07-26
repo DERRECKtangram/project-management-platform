@@ -31,10 +31,11 @@ export function ProjectListManager() {
 
   async function createProject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setSaving(true);
     setMessage("");
 
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     try {
       const response = await fetch("/api/flow", {
         method: "POST",
@@ -55,7 +56,7 @@ export function ProjectListManager() {
       if (!response.ok) {
         throw new Error(result.error || "建立專案失敗");
       }
-      event.currentTarget.reset();
+      formElement.reset();
       await refresh();
       setMessage("專案已建立，可以點進去新增四階段小關。");
     } catch (error) {
@@ -98,7 +99,7 @@ export function ProjectListManager() {
           </label>
           <label>
             總期限
-            <input name="due" placeholder="例如 2026-12-31" />
+            <input name="due" type="date" />
           </label>
           <label>
             預算

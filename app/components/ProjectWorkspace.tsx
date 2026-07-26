@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
-import { useFlowData } from "./useFlowData";
 import type { WorkflowItem } from "./flowTypes";
+import { useFlowData } from "./useFlowData";
 
 const roles = ["專案管理人員", "研發人員", "管理層"];
-const statuses = ["待處理", "進行中", "待確認", "已完成"];
+const statuses = ["未處理", "進行中", "已完成"];
 
 type ProjectWorkspaceProps = {
   code: string;
@@ -15,7 +15,6 @@ type ProjectWorkspaceProps = {
 function statusClass(status: string) {
   if (status === "已完成") return "done";
   if (status === "進行中") return "active";
-  if (status === "待確認") return "risk";
   return "waiting";
 }
 
@@ -39,11 +38,12 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
 
   async function createItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     if (!project) return;
     setSaving(true);
     setMessage("");
 
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     try {
       const response = await fetch("/api/flow", {
         method: "POST",
@@ -65,7 +65,8 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
       if (!response.ok) {
         throw new Error(result.error || "新增小關失敗");
       }
-      event.currentTarget.reset();
+      formElement.reset();
+      setPhase("提案");
       await refresh();
       setMessage("小關已新增。");
     } catch (error) {
@@ -145,7 +146,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
           </label>
           <label>
             負責窗口
-            <input name="owner" placeholder="例如 王柏翰" />
+            <input name="owner" placeholder="例如 Max" />
           </label>
           <label>
             角色
@@ -156,8 +157,8 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
             </select>
           </label>
           <label>
-            結束時間
-            <input name="dueDate" placeholder="例如 2026-08-15" />
+            結束日期
+            <input name="dueDate" type="date" />
           </label>
           <label className="wide-field">
             文件或 Google 連結
@@ -179,7 +180,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
           const phaseItems = items.filter((item) => item.phase === itemPhase);
           return (
             <article className={`flow-phase ${phaseClass(itemPhase)}`} key={itemPhase}>
-              <header>
+              <header className="phase-header">
                 <span>{itemPhase}</span>
                 <strong>{phaseItems.filter((item) => item.status === "已完成").length}/{phaseItems.length}</strong>
               </header>
@@ -235,7 +236,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                   <div className="flow-actions">
                     {statuses.map((status) => (
                       <button
-                        className={status === "已完成" ? "primary-action" : "secondary-action"}
+                        className={status === item.status ? "primary-action" : "secondary-action"}
                         key={status}
                         onClick={() => void updateItem(item, { status })}
                         type="button"

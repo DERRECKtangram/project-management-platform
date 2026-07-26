@@ -33,8 +33,8 @@ export function DashboardHome() {
         </Link>
         <Link className="home-action-card rd-card" href="/people">
           <span>研發填報</span>
-          <h2>看自己的任務，填成果與文件</h2>
-          <p>給研發人員使用：只聚焦在被分配的小關，完成後更新狀態並貼上 Google 或文件連結。</p>
+          <h2>篩選專案，填成果與文件</h2>
+          <p>給研發人員使用：先選專案與窗口，只處理自己負責的小關，完成後貼上 Google 或文件連結。</p>
           <strong>進入填報</strong>
         </Link>
       </section>
@@ -107,7 +107,7 @@ export function DashboardHome() {
             </div>
             <Link href="/people">填報</Link>
           </div>
-          {upcomingItems.length === 0 ? <p className="plain-copy">目前沒有待處理小關。</p> : null}
+          {upcomingItems.length === 0 ? <p className="plain-copy">目前沒有未完成小關。</p> : null}
           {upcomingItems.map((item) => (
             <Link className="focus-card rd-focus" href="/people" key={item.id}>
               <span>{item.projectName} / {item.phase}</span>
