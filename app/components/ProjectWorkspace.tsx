@@ -513,11 +513,11 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                             void saveEditedItem(item, new FormData(event.currentTarget));
                           }}
                         >
-                          <label>
+                          <label className="edit-field half-field">
                             小關名稱
                             <input name="title" defaultValue={item.title} />
                           </label>
-                          <label>
+                          <label className="edit-field half-field">
                             階段
                             <select name="phase" defaultValue={item.phase}>
                               {data.phases.map((itemPhaseOption) => (
@@ -525,7 +525,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                               ))}
                             </select>
                           </label>
-                          <div className="form-field">
+                          <div className="form-field assignee-field">
                             <span>指派研發</span>
                             {ownerChoices(project.developers, item.owner).length > 0 ? (
                               <div className="owner-checklist">
@@ -540,15 +540,15 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                               <input name="ownerText" defaultValue={item.owner} placeholder="可用頓號、逗號或換行分隔多人" />
                             )}
                           </div>
-                          <label>
+                          <label className="edit-field due-field">
                             期限
                             <input name="dueDate" defaultValue={normalizeDateInput(item.dueDate)} type="date" />
                           </label>
-                          <label className="wide-field">
+                          <label className="wide-field content-field">
                             要做的內容
                             <textarea name="content" defaultValue={itemContent.taskContent} placeholder="說明這個小關要完成什麼" />
                           </label>
-                          <div className="form-field wide-field">
+                          <div className="form-field wide-field link-field">
                             <span>參考連結</span>
                             <TaskLinksFields initialLinks={itemTaskLinks} />
                           </div>

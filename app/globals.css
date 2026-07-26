@@ -1508,18 +1508,31 @@ select {
 .inline-edit-form {
   border-top: 1px solid #e8edf4;
   display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  padding-top: 12px;
+  gap: 14px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  padding-top: 14px;
 }
 
 .inline-edit-form label,
 .inline-edit-form .form-field {
+  align-content: start;
   color: var(--muted);
   display: grid;
   font-size: 12px;
   font-weight: 900;
   gap: 6px;
+}
+
+.inline-edit-form .half-field {
+  grid-column: span 6;
+}
+
+.inline-edit-form .assignee-field {
+  grid-column: span 7;
+}
+
+.inline-edit-form .due-field {
+  grid-column: span 5;
 }
 
 .inline-edit-form input,
@@ -1536,11 +1549,13 @@ select {
 
 .inline-edit-form textarea {
   line-height: 1.55;
-  min-height: 84px;
+  min-height: 110px;
   resize: vertical;
 }
 
-.inline-edit-form .wide-field {
+.inline-edit-form .wide-field,
+.inline-edit-form .content-field,
+.inline-edit-form .link-field {
   grid-column: 1 / -1;
 }
 
@@ -1550,7 +1565,7 @@ select {
 
 .link-list-field {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .link-input-row {
@@ -1560,6 +1575,11 @@ select {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.inline-edit-form .owner-checklist {
+  align-content: start;
+  min-height: 118px;
+}
+
 .inline-edit-form button {
   align-self: end;
 }
@@ -1567,9 +1587,10 @@ select {
 .edit-actions {
   align-items: end;
   display: grid;
-  gap: 8px;
+  gap: 12px;
   grid-column: 1 / -1;
   grid-template-columns: 1fr 1fr;
+  padding-top: 2px;
 }
 
 .flow-actions {
@@ -2654,7 +2675,12 @@ select {
   }
 
   .inline-edit-form,
-  .inline-edit-form .wide-field {
+  .inline-edit-form .wide-field,
+  .inline-edit-form .half-field,
+  .inline-edit-form .assignee-field,
+  .inline-edit-form .due-field,
+  .inline-edit-form .content-field,
+  .inline-edit-form .link-field {
     grid-column: auto;
     grid-template-columns: 1fr;
   }
