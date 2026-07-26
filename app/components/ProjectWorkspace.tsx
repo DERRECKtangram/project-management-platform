@@ -5,8 +5,6 @@ import { useMemo, useState, type DragEvent, type FormEvent } from "react";
 import type { WorkflowItem } from "./flowTypes";
 import { useFlowData } from "./useFlowData";
 
-const roles = ["專案管理人員", "研發人員", "管理層"];
-
 type ProjectWorkspaceProps = {
   code: string;
 };
@@ -95,7 +93,6 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
           phase: form.get("phase"),
           title: form.get("title"),
           owner: form.get("owner"),
-          role: form.get("role"),
           content: form.get("content"),
           dueDate: form.get("dueDate"),
         }),
@@ -135,11 +132,28 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
       title: String(form.get("title") || ""),
       phase: String(form.get("phase") || ""),
       owner: String(form.get("owner") || ""),
-      role: String(form.get("role") || ""),
       dueDate: String(form.get("dueDate") || ""),
     });
     setMessage("小關內容已儲存。");
     setEditingItemId(null);
+  }
+
+  async function deleteItem(item: WorkflowItem) {
+    if (!window.confirm(`確定刪除「${item.title}」？`)) return;
+    setMessage("");
+    const response = await fetch("/api/flow", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id }),
+    });
+    const result = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setMessage(result.error || "刪除小關失敗");
+      return;
+    }
+    setEditingItemId(null);
+    await refresh();
+    setMessage("小關已刪除。");
   }
 
   async function moveItemToPhase(event: DragEvent<HTMLElement>, targetPhase: string, targetIndex?: number) {
@@ -272,14 +286,6 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                     <input name="owner" placeholder="例如 Max" />
                   </label>
                   <label>
-                    角色
-                    <select name="role" defaultValue="研發人員">
-                      {roles.map((role) => (
-                        <option key={role}>{role}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
                     結束日期
                     <input name="dueDate" type="date" />
                   </label>
@@ -321,7 +327,6 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                     <div className="flow-item-head">
                       <div className="flow-item-idline">
                         <strong>{itemCode}</strong>
-                        <span>{item.role}</span>
                       </div>
                       <div className="flow-status-line">
                         <b className={statusClass(item.status)}>{item.status}</b>
@@ -378,18 +383,13 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                             <input name="owner" defaultValue={item.owner} />
                           </label>
                           <label>
-                            角色
-                            <select name="role" defaultValue={item.role}>
-                              {roles.map((role) => (
-                                <option key={role}>{role}</option>
-                              ))}
-                            </select>
-                          </label>
-                          <label>
                             期限
                             <input name="dueDate" defaultValue={normalizeDateInput(item.dueDate)} type="date" />
                           </label>
-                          <button className="secondary-action" type="submit">儲存小關</button>
+                          <div className="edit-actions">
+                            <button className="danger-action" onClick={() => void deleteItem(item)} type="button">刪除小關</button>
+                            <button className="secondary-action" type="submit">儲存小關</button>
+                          </div>
                         </form>
                       </>
                     ) : null}

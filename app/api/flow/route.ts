@@ -309,3 +309,32 @@ export async function PATCH(request: Request) {
     return Response.json({ error: routeError(error) }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const db = await getFlowDb();
+    const payload = (await request.json()) as FlowPayload;
+    const id = payload.id?.trim();
+
+    if (!id) {
+      return Response.json({ error: "小關 id 必填。" }, { status: 400 });
+    }
+
+    const existing = await db
+      .select()
+      .from(schema.workflowItems)
+      .where(eq(schema.workflowItems.id, id))
+      .get();
+
+    if (!existing) {
+      return Response.json({ error: "找不到小關。" }, { status: 404 });
+    }
+
+    await db.delete(schema.workflowItems).where(eq(schema.workflowItems.id, id));
+    await updateProjectRollup(existing.projectCode);
+
+    return Response.json({ ok: true });
+  } catch (error) {
+    return Response.json({ error: routeError(error) }, { status: 500 });
+  }
+}

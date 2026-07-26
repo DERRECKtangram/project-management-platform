@@ -208,6 +208,7 @@ select {
 
 .primary-action,
 .secondary-action,
+.danger-action,
 .report-card button {
   border-radius: 8px;
   font-weight: 900;
@@ -227,6 +228,12 @@ select {
   background: #ffffff;
   border: 1px solid var(--line);
   color: var(--nav);
+}
+
+.danger-action {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #be123c;
 }
 
 .metric-grid,
@@ -1456,6 +1463,14 @@ select {
 
 .inline-edit-form button {
   align-self: end;
+}
+
+.edit-actions {
+  align-items: end;
+  display: grid;
+  gap: 8px;
+  grid-column: 1 / -1;
+  grid-template-columns: 1fr 1fr;
 }
 
 .flow-actions {
