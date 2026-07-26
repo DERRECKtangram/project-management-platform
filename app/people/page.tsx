@@ -7,7 +7,7 @@ export default function PeoplePage() {
     <AppShell
       active="/people"
       eyebrow="研發填報"
-      title="只看自己負責的小關，完成後貼上成果連結"
+      title="用顏色看狀態，快速補齊成果內容"
       actions={<Link className="secondary-action" href="/projects">回專案管理</Link>}
     >
       <PeopleWorkload />

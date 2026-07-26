@@ -1545,6 +1545,88 @@ select {
   background: #f7fff9;
 }
 
+.rd-status-summary {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.rd-summary-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+  min-height: 118px;
+  padding: 16px;
+  text-align: left;
+}
+
+.rd-summary-card span {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.rd-summary-card strong {
+  color: var(--ink);
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.rd-summary-card small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.rd-summary-card.all {
+  background: #ffffff;
+}
+
+.rd-summary-card.waiting {
+  background: #f3f6fa;
+  border-color: #c8d2df;
+}
+
+.rd-summary-card.active {
+  background: #eef6ff;
+  border-color: #9cc7ff;
+}
+
+.rd-summary-card.done {
+  background: #edfdf4;
+  border-color: #8bdfad;
+}
+
+.rd-summary-card.missing {
+  background: #fff1f3;
+  border-color: #f7a6b8;
+}
+
+.rd-summary-card.waiting span {
+  color: #475467;
+}
+
+.rd-summary-card.active span {
+  color: var(--blue);
+}
+
+.rd-summary-card.done span {
+  color: var(--green);
+}
+
+.rd-summary-card.missing span {
+  color: var(--red);
+}
+
+.rd-summary-card.selected {
+  box-shadow: 0 16px 34px rgba(16, 24, 40, 0.12);
+  outline: 3px solid rgba(31, 111, 235, 0.14);
+}
+
 .rd-toolbar {
   align-items: center;
   display: flex;
@@ -1605,6 +1687,21 @@ select {
   display: grid;
   gap: 12px;
   padding: 16px;
+}
+
+.rd-task-card.status-waiting {
+  background: linear-gradient(180deg, #ffffff, #f5f7fa);
+  border-left: 7px solid #98a2b3;
+}
+
+.rd-task-card.status-active {
+  background: linear-gradient(180deg, #ffffff, #eef6ff);
+  border-left: 7px solid var(--blue);
+}
+
+.rd-task-card.status-done {
+  background: linear-gradient(180deg, #ffffff, #eefaf3);
+  border-left: 7px solid var(--green);
 }
 
 .rd-task-card header {
@@ -1763,6 +1860,31 @@ select {
   padding: 7px 10px;
 }
 
+.rd-phase-badge.waiting {
+  background: #eef3f8;
+  color: #475467;
+}
+
+.rd-phase-badge.active {
+  background: #dbeafe;
+  color: var(--blue);
+}
+
+.rd-phase-badge.done {
+  background: #dcfae6;
+  color: var(--green);
+}
+
+.doc-ok {
+  color: var(--green);
+  font-weight: 900;
+}
+
+.doc-missing {
+  color: var(--red);
+  font-weight: 900;
+}
+
 .phase-header span {
   color: var(--ink);
   font-size: 22px;
@@ -1795,6 +1917,7 @@ select {
   .flow-summary-grid,
   .flow-board,
   .rd-board,
+  .rd-status-summary,
   .light-people-grid,
   .meeting-form {
     grid-template-columns: 1fr;

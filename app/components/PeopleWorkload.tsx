@@ -17,6 +17,7 @@ export function PeopleWorkload() {
   const { data, loading, message, setMessage, refresh } = useFlowData();
   const [owner, setOwner] = useState("全部窗口");
   const [projectCode, setProjectCode] = useState("全部專案");
+  const [statusFilter, setStatusFilter] = useState("全部狀態");
   const [savingId, setSavingId] = useState("");
 
   const owners = useMemo(() => {
@@ -32,16 +33,31 @@ export function PeopleWorkload() {
     return new Map(data.projects.map((project) => [project.code, project.name]));
   }, [data.projects]);
 
-  const visibleItems = useMemo(() => {
+  const scopedItems = useMemo(() => {
     return data.workflowItems
       .filter((item) => owner === "全部窗口" || item.owner === owner)
-      .filter((item) => projectCode === "全部專案" || item.projectCode === projectCode)
+      .filter((item) => projectCode === "全部專案" || item.projectCode === projectCode);
+  }, [data.workflowItems, owner, projectCode]);
+
+  const summary = useMemo(() => {
+    return {
+      all: scopedItems.length,
+      waiting: scopedItems.filter((item) => item.status === "未處理").length,
+      active: scopedItems.filter((item) => item.status === "進行中").length,
+      done: scopedItems.filter((item) => item.status === "已完成").length,
+      missingDocs: scopedItems.filter((item) => !item.documentUrl).length,
+    };
+  }, [scopedItems]);
+
+  const visibleItems = useMemo(() => {
+    return scopedItems
+      .filter((item) => statusFilter === "全部狀態" || item.status === statusFilter)
       .sort((a, b) => {
         if (a.status === "已完成" && b.status !== "已完成") return 1;
         if (a.status !== "已完成" && b.status === "已完成") return -1;
         return a.dueDate.localeCompare(b.dueDate);
       });
-  }, [data.workflowItems, owner, projectCode]);
+  }, [scopedItems, statusFilter]);
 
   const people = useMemo(() => {
     const map = new Map<string, { name: string; total: number; done: number; missingDocs: number }>();
@@ -85,7 +101,7 @@ export function PeopleWorkload() {
       <section className="rd-toolbar panel">
         <div>
           <p>篩選填報內容</p>
-          <h2>先選專案，再選窗口，只留下需要處理的小關</h2>
+          <h2>用顏色快速看出目前卡在哪裡</h2>
         </div>
         <div className="rd-filter-controls">
           <label>
@@ -107,6 +123,50 @@ export function PeopleWorkload() {
             </select>
           </label>
         </div>
+      </section>
+
+      <section className="rd-status-summary" aria-label="研發填報狀態分析">
+        <button
+          className={statusFilter === "全部狀態" ? "rd-summary-card all selected" : "rd-summary-card all"}
+          onClick={() => setStatusFilter("全部狀態")}
+          type="button"
+        >
+          <span>全部</span>
+          <strong>{summary.all}</strong>
+          <small>目前篩選後的小關</small>
+        </button>
+        <button
+          className={statusFilter === "未處理" ? "rd-summary-card waiting selected" : "rd-summary-card waiting"}
+          onClick={() => setStatusFilter("未處理")}
+          type="button"
+        >
+          <span>未處理</span>
+          <strong>{summary.waiting}</strong>
+          <small>還沒開始，優先確認方向</small>
+        </button>
+        <button
+          className={statusFilter === "進行中" ? "rd-summary-card active selected" : "rd-summary-card active"}
+          onClick={() => setStatusFilter("進行中")}
+          type="button"
+        >
+          <span>進行中</span>
+          <strong>{summary.active}</strong>
+          <small>正在製作或整理資料</small>
+        </button>
+        <button
+          className={statusFilter === "已完成" ? "rd-summary-card done selected" : "rd-summary-card done"}
+          onClick={() => setStatusFilter("已完成")}
+          type="button"
+        >
+          <span>已完成</span>
+          <strong>{summary.done}</strong>
+          <small>已填報完成</small>
+        </button>
+        <button className="rd-summary-card missing" onClick={() => setStatusFilter("全部狀態")} type="button">
+          <span>缺文件</span>
+          <strong>{summary.missingDocs}</strong>
+          <small>還沒貼成果連結</small>
+        </button>
       </section>
 
       {!loading && people.length === 0 ? (
@@ -138,67 +198,76 @@ export function PeopleWorkload() {
       </section>
 
       <section className="rd-board">
-        {visibleItems.map((item) => (
-          <article className="rd-task-card" key={item.id}>
-            <header>
-              <span>{item.projectName}</span>
-              <b className={statusClass(item.status)}>{item.status}</b>
-            </header>
-            <div className={`rd-phase-badge ${statusClass(item.status)}`}>{item.phase}</div>
-            <h2>{item.title}</h2>
-            <label>
-              研發填報內容
-              <textarea
-                defaultValue={item.content === "待補內容" ? "" : item.content}
-                onBlur={(event) => {
-                  if (event.currentTarget.value !== item.content) {
-                    void updateItem(item, { content: event.currentTarget.value });
-                  }
-                }}
-                placeholder="寫下目前完成內容、討論結論、測試結果或需要 PM 知道的方向"
-              />
-            </label>
-            <dl>
-              <div>
-                <dt>階段</dt>
-                <dd>{item.phase}</dd>
+        {visibleItems.map((item) => {
+          const itemStatusClass = statusClass(item.status);
+          return (
+            <article className={`rd-task-card status-${itemStatusClass}`} key={item.id}>
+              <header>
+                <span>{item.projectName}</span>
+                <b className={itemStatusClass}>{item.status}</b>
+              </header>
+              <div className={`rd-phase-badge ${itemStatusClass}`}>{item.phase}</div>
+              <h2>{item.title}</h2>
+              <label>
+                研發填報內容
+                <textarea
+                  defaultValue={item.content === "待補內容" ? "" : item.content}
+                  onBlur={(event) => {
+                    if (event.currentTarget.value !== item.content) {
+                      void updateItem(item, { content: event.currentTarget.value });
+                    }
+                  }}
+                  placeholder="寫下目前完成內容、討論結論、測試結果或需要 PM 知道的方向"
+                />
+              </label>
+              <dl>
+                <div>
+                  <dt>階段</dt>
+                  <dd>{item.phase}</dd>
+                </div>
+                <div>
+                  <dt>窗口</dt>
+                  <dd>{item.owner}</dd>
+                </div>
+                <div>
+                  <dt>期限</dt>
+                  <dd>{item.dueDate}</dd>
+                </div>
+                <div>
+                  <dt>文件</dt>
+                  <dd className={item.documentUrl ? "doc-ok" : "doc-missing"}>
+                    {item.documentUrl ? "已有連結" : "缺文件"}
+                  </dd>
+                </div>
+              </dl>
+              <label>
+                文件或 Google 連結
+                <input
+                  defaultValue={item.documentUrl}
+                  onBlur={(event) => {
+                    if (event.currentTarget.value !== item.documentUrl) {
+                      void updateItem(item, { documentUrl: event.currentTarget.value });
+                    }
+                  }}
+                  placeholder="貼上成果文件連結"
+                />
+              </label>
+              <div className="rd-actions">
+                {statuses.map((status) => (
+                  <button
+                    className={status === item.status ? "primary-action" : "secondary-action"}
+                    disabled={savingId === item.id}
+                    key={status}
+                    onClick={() => void updateItem(item, { status })}
+                    type="button"
+                  >
+                    {status}
+                  </button>
+                ))}
               </div>
-              <div>
-                <dt>窗口</dt>
-                <dd>{item.owner}</dd>
-              </div>
-              <div>
-                <dt>期限</dt>
-                <dd>{item.dueDate}</dd>
-              </div>
-            </dl>
-            <label>
-              文件或 Google 連結
-              <input
-                defaultValue={item.documentUrl}
-                onBlur={(event) => {
-                  if (event.currentTarget.value !== item.documentUrl) {
-                    void updateItem(item, { documentUrl: event.currentTarget.value });
-                  }
-                }}
-                placeholder="貼上成果文件連結"
-              />
-            </label>
-            <div className="rd-actions">
-              {statuses.map((status) => (
-                <button
-                  className={status === item.status ? "primary-action" : "secondary-action"}
-                  disabled={savingId === item.id}
-                  key={status}
-                  onClick={() => void updateItem(item, { status })}
-                  type="button"
-                >
-                  {status}
-                </button>
-              ))}
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </section>
     </>
   );
