@@ -1207,8 +1207,8 @@ select {
 
 .flow-item {
   display: grid;
-  gap: 10px;
-  padding: 14px;
+  gap: 9px;
+  padding: 12px;
 }
 
 .flow-item-head {
@@ -1259,9 +1259,24 @@ select {
 
 .flow-item h3 {
   color: var(--ink);
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 900;
   margin: 0;
+}
+
+.compact-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.compact-meta span {
+  background: #f5f8fb;
+  border-radius: 999px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 8px;
 }
 
 .flow-item p {
@@ -1276,8 +1291,8 @@ select {
   border: 1px solid #c7f0d7;
   border-radius: 8px;
   display: grid;
-  gap: 5px;
-  padding: 10px;
+  gap: 4px;
+  padding: 9px;
 }
 
 .rd-content-preview span {
@@ -1291,6 +1306,22 @@ select {
   font-size: 14px;
   line-height: 1.55;
   margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.compact-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.compact-actions .secondary-action {
+  min-height: 34px;
+  padding: 7px 12px;
 }
 
 .flow-item dl {

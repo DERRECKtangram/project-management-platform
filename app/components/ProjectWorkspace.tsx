@@ -41,6 +41,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
   const { data, loading, message, setMessage, refresh } = useFlowData();
   const [phase, setPhase] = useState("提案");
   const [saving, setSaving] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   const project = data.projects.find((item) => item.code === code);
   const items = useMemo(
@@ -114,6 +115,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
       documentUrl: String(form.get("documentUrl") || ""),
     });
     setMessage("小關內容已儲存。");
+    setEditingItemId(null);
   }
 
   if (loading) {
@@ -212,6 +214,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
               {phaseItems.length === 0 ? <p className="plain-copy">尚未新增小關</p> : null}
               {phaseItems.map((item) => {
                 const overdue = isOverdue(item);
+                const isEditing = editingItemId === item.id;
                 return (
                   <div className={`flow-item ${overdue ? "overdue" : ""}`} key={item.id}>
                     <div className="flow-item-head">
@@ -222,95 +225,90 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                       </div>
                     </div>
                     <h3>{item.title}</h3>
+                    <div className="compact-meta">
+                      <span>窗口：{item.owner}</span>
+                      <span>文件：{item.documentUrl ? "已提供" : "未提供"}</span>
+                      {item.completedAt ? <span>完成：{item.completedAt}</span> : null}
+                    </div>
                     <section className="rd-content-preview">
                       <span>研發填報內容</span>
                       <p>{item.content === "待補內容" ? "尚未填寫" : item.content}</p>
                     </section>
-                    <dl>
-                      <div>
-                        <dt>窗口</dt>
-                        <dd>{item.owner}</dd>
-                      </div>
-                      <div>
-                        <dt>階段</dt>
-                        <dd>{item.phase}</dd>
-                      </div>
-                      <div>
-                        <dt>文件</dt>
-                        <dd>
-                          {item.documentUrl ? (
-                            <a className="doc-link" href={item.documentUrl} rel="noreferrer" target="_blank">
-                              開啟連結
-                            </a>
-                          ) : (
-                            "未提供"
-                          )}
-                        </dd>
-                      </div>
-                      {item.completedAt ? (
-                        <div>
-                          <dt>完成</dt>
-                          <dd>{item.completedAt}</dd>
-                        </div>
+                    <div className="compact-actions">
+                      {item.documentUrl ? (
+                        <a className="doc-link" href={item.documentUrl} rel="noreferrer" target="_blank">
+                          開啟文件
+                        </a>
                       ) : null}
-                    </dl>
-                    <form
-                      className="inline-edit-form"
-                      onSubmit={(event) => {
-                        event.preventDefault();
-                        void saveEditedItem(item, new FormData(event.currentTarget));
-                      }}
-                    >
-                      <label>
-                        小關名稱
-                        <input name="title" defaultValue={item.title} />
-                      </label>
-                      <label>
-                        階段
-                        <select name="phase" defaultValue={item.phase}>
-                          {data.phases.map((itemPhaseOption) => (
-                            <option key={itemPhaseOption}>{itemPhaseOption}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        負責窗口
-                        <input name="owner" defaultValue={item.owner} />
-                      </label>
-                      <label>
-                        角色
-                        <select name="role" defaultValue={item.role}>
-                          {roles.map((role) => (
-                            <option key={role}>{role}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        期限
-                        <input name="dueDate" defaultValue={normalizeDateInput(item.dueDate)} type="date" />
-                      </label>
-                      <label className="wide-field">
-                        研發填報內容
-                        <textarea name="content" defaultValue={item.content === "待補內容" ? "" : item.content} />
-                      </label>
-                      <label className="wide-field">
-                        文件或 Google 連結
-                        <input name="documentUrl" defaultValue={item.documentUrl} placeholder="貼上 Google 文件或雲端連結" />
-                      </label>
-                      <button className="secondary-action" type="submit">儲存小關</button>
-                    </form>
-                    <div className="flow-actions">
-                      {statuses.map((status) => (
-                        <button
-                          className={status === item.status ? "primary-action" : "secondary-action"}
-                          key={status}
-                          onClick={() => void updateItem(item, { status })}
-                          type="button"
-                        >
-                          {status}
-                        </button>
-                      ))}
+                      <button
+                        className="secondary-action"
+                        onClick={() => setEditingItemId(isEditing ? null : item.id)}
+                        type="button"
+                      >
+                        {isEditing ? "收起" : "編輯"}
+                      </button>
                     </div>
+                    {isEditing ? (
+                      <>
+                        <form
+                          className="inline-edit-form"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            void saveEditedItem(item, new FormData(event.currentTarget));
+                          }}
+                        >
+                          <label>
+                            小關名稱
+                            <input name="title" defaultValue={item.title} />
+                          </label>
+                          <label>
+                            階段
+                            <select name="phase" defaultValue={item.phase}>
+                              {data.phases.map((itemPhaseOption) => (
+                                <option key={itemPhaseOption}>{itemPhaseOption}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            負責窗口
+                            <input name="owner" defaultValue={item.owner} />
+                          </label>
+                          <label>
+                            角色
+                            <select name="role" defaultValue={item.role}>
+                              {roles.map((role) => (
+                                <option key={role}>{role}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            期限
+                            <input name="dueDate" defaultValue={normalizeDateInput(item.dueDate)} type="date" />
+                          </label>
+                          <label className="wide-field">
+                            研發填報內容
+                            <textarea name="content" defaultValue={item.content === "待補內容" ? "" : item.content} />
+                          </label>
+                          <label className="wide-field">
+                            文件或 Google 連結
+                            <input name="documentUrl" defaultValue={item.documentUrl} placeholder="貼上 Google 文件或雲端連結" />
+                          </label>
+                          <button className="secondary-action" type="submit">儲存小關</button>
+                        </form>
+                        <div className="flow-actions">
+                          {statuses.map((status) => (
+                            <button
+                              className={status === item.status ? "primary-action" : "secondary-action"}
+                              key={status}
+                              onClick={() => void updateItem(item, { status })}
+                              type="button"
+                            >
+                              {status}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
                   </div>
                 );
               })}
