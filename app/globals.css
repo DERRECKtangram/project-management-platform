@@ -1208,6 +1208,22 @@ select {
   padding-bottom: 10px;
 }
 
+.phase-title-line {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.phase-title-line small {
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 999px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 6px 9px;
+}
+
 .flow-phase header strong {
   color: var(--muted);
   font-size: 12px;

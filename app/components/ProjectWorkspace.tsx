@@ -37,6 +37,17 @@ function isOverdue(item: WorkflowItem) {
   return item.dueDate < todayKey;
 }
 
+function latestDueDate(items: WorkflowItem[]) {
+  const dates = items.map((item) => normalizeDateInput(item.dueDate)).filter(Boolean).sort();
+  return dates.at(-1) ?? "";
+}
+
+function displayDate(value: string) {
+  if (!normalizeDateInput(value)) return value;
+  const [year, month, day] = value.split("-");
+  return `${year}/${Number(month)}/${Number(day)}`;
+}
+
 export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
   const { data, loading, message, setMessage, refresh } = useFlowData();
   const [phase, setPhase] = useState("提案");
@@ -49,6 +60,15 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
   const items = useMemo(
     () => data.workflowItems.filter((item) => item.projectCode === code),
     [code, data.workflowItems],
+  );
+  const sortedItems = useMemo(
+    () =>
+      [...items].sort((a, b) => {
+        const positionDiff = (a.position ?? 0) - (b.position ?? 0);
+        if (positionDiff !== 0) return positionDiff;
+        return (a.createdAt ?? "").localeCompare(b.createdAt ?? "");
+      }),
+    [items],
   );
 
   async function createItem(event: FormEvent<HTMLFormElement>) {
@@ -120,17 +140,49 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
     setEditingItemId(null);
   }
 
-  async function moveItemToPhase(event: DragEvent<HTMLElement>, targetPhase: string) {
+  async function moveItemToPhase(event: DragEvent<HTMLElement>, targetPhase: string, targetIndex?: number) {
     event.preventDefault();
+    event.stopPropagation();
     const itemId = event.dataTransfer.getData("text/plain") || draggingItemId;
-    const item = items.find((workflowItem) => workflowItem.id === itemId);
+    const item = sortedItems.find((workflowItem) => workflowItem.id === itemId);
     setDropPhase(null);
     setDraggingItemId(null);
-    if (!item || item.phase === targetPhase) return;
+    if (!item) return;
 
     setEditingItemId(null);
-    await updateItem(item, { phase: targetPhase });
-    setMessage(`已移到「${targetPhase}」。`);
+    const phaseNames = [...new Set([item.phase, targetPhase])];
+    const updates = phaseNames.flatMap((phaseName) => {
+      const phaseItems = sortedItems.filter((workflowItem) => workflowItem.phase === phaseName && workflowItem.id !== item.id);
+      if (phaseName === targetPhase) {
+        const currentIndex = sortedItems.filter((workflowItem) => workflowItem.phase === targetPhase).findIndex((workflowItem) => workflowItem.id === item.id);
+        const insertIndex =
+          targetIndex === undefined
+            ? phaseItems.length
+            : item.phase === targetPhase && currentIndex > -1 && currentIndex < targetIndex
+              ? targetIndex - 1
+              : targetIndex;
+        phaseItems.splice(Math.max(0, insertIndex), 0, { ...item, phase: targetPhase });
+      }
+
+      return phaseItems.map((workflowItem, index) => ({
+        id: workflowItem.id,
+        phase: phaseName,
+        position: (index + 1) * 1000,
+      }));
+    });
+
+    const response = await fetch("/api/flow", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "reorder-items", items: updates }),
+    });
+    const result = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setMessage(result.error || "更新小關順序失敗");
+      return;
+    }
+    await refresh();
+    setMessage(item.phase === targetPhase ? "小關順序已更新。" : `已移到「${targetPhase}」。`);
   }
 
   if (loading) {
@@ -219,8 +271,9 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
 
       <section className="flow-board">
         {data.phases.map((itemPhase) => {
-          const phaseItems = items.filter((item) => item.phase === itemPhase);
+          const phaseItems = sortedItems.filter((item) => item.phase === itemPhase);
           const phaseNumber = data.phases.indexOf(itemPhase) + 1;
+          const phaseDue = latestDueDate(phaseItems);
           return (
             <article
               className={`flow-phase ${phaseClass(itemPhase)} ${dropPhase === itemPhase ? "drop-ready" : ""}`}
@@ -233,7 +286,10 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
               onDrop={(event) => void moveItemToPhase(event, itemPhase)}
             >
               <header className="phase-header">
-                <span>{itemPhase}</span>
+                <div className="phase-title-line">
+                  <span>{itemPhase}</span>
+                  {phaseDue ? <small>最晚 {displayDate(phaseDue)}</small> : null}
+                </div>
                 <strong>{phaseItems.filter((item) => item.status === "已完成").length}/{phaseItems.length}</strong>
               </header>
               {phaseItems.length === 0 ? <p className="plain-copy">尚未新增小關</p> : null}
@@ -255,6 +311,12 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                       event.dataTransfer.effectAllowed = "move";
                       event.dataTransfer.setData("text/plain", item.id);
                     }}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setDropPhase(itemPhase);
+                    }}
+                    onDrop={(event) => void moveItemToPhase(event, itemPhase, itemIndex)}
                   >
                     <div className="flow-item-head">
                       <div className="flow-item-idline">

@@ -26,6 +26,7 @@ export type WorkflowItem = {
   status: string;
   documentUrl: string;
   completedAt: string;
+  position?: number;
   createdAt?: string;
 };
 

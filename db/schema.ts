@@ -92,5 +92,6 @@ export const workflowItems = sqliteTable("workflow_items", {
   status: text("status").notNull(),
   documentUrl: text("document_url").notNull().default(""),
   completedAt: text("completed_at").notNull().default(""),
+  position: integer("position").notNull().default(0),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });

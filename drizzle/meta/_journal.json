@@ -22,6 +22,13 @@
       "when": 1784891430000,
       "tag": "0002_clean_demo_projects",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1785063900000,
+      "tag": "0003_workflow_item_positions",
+      "breakpoints": true
     }
   ]
 }
