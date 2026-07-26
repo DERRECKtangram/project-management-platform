@@ -8,6 +8,7 @@ import { useFlowData } from "./useFlowData";
 const statuses = ["未處理", "進行中", "已完成"];
 const defaultPhases = ["提案", "啟動", "期中", "期末"];
 const reportEntryMarker = "__RD_REPORT_ENTRIES_V1__";
+const allOwnersLabel = "全部填報人";
 
 type ReportEntry = {
   content: string;
@@ -155,7 +156,7 @@ function ReportEntryEditor({
 
 export function PeopleWorkload() {
   const { data, loading, message, setMessage, refresh } = useFlowData();
-  const [owner, setOwner] = useState("全部窗口");
+  const [owner, setOwner] = useState(allOwnersLabel);
   const [projectCode, setProjectCode] = useState("全部專案");
   const [statusFilter, setStatusFilter] = useState("全部狀態");
   const [savingId, setSavingId] = useState("");
@@ -163,7 +164,7 @@ export function PeopleWorkload() {
 
   const owners = useMemo(() => {
     const names = data.workflowItems.flatMap((item) => splitOwners(item.owner));
-    return ["全部窗口", ...Array.from(new Set(names))];
+    return [allOwnersLabel, ...Array.from(new Set(names))];
   }, [data.workflowItems]);
 
   const projectOptions = useMemo(() => {
@@ -176,7 +177,7 @@ export function PeopleWorkload() {
 
   const scopedItems = useMemo(() => {
     return data.workflowItems
-      .filter((item) => owner === "全部窗口" || splitOwners(item.owner).includes(owner))
+      .filter((item) => owner === allOwnersLabel || splitOwners(item.owner).includes(owner))
       .filter((item) => projectCode === "全部專案" || item.projectCode === projectCode);
   }, [data.workflowItems, owner, projectCode]);
 
@@ -244,8 +245,8 @@ export function PeopleWorkload() {
             </select>
           </label>
           <label>
-            窗口
-            <select aria-label="選擇負責窗口" onChange={(event) => setOwner(event.target.value)} value={owner}>
+            填報人員
+            <select aria-label="選擇填報人員" onChange={(event) => setOwner(event.target.value)} value={owner}>
               {owners.map((name) => (
                 <option key={name}>{name}</option>
               ))}
@@ -322,6 +323,7 @@ export function PeopleWorkload() {
                 const reportEntries = parseReportEntries(item);
                 const reportLinks = reportEntries.filter((entry) => entry.link.trim());
                 const itemHasLink = reportLinks.length > 0 || Boolean(item.documentUrl);
+                const currentReporter = owner === allOwnersLabel ? splitOwners(item.owner).join("、") : owner;
                 return (
                   <div className={`rd-task-card status-${itemStatusClass}`} key={item.id}>
                     <header>
@@ -330,7 +332,7 @@ export function PeopleWorkload() {
                     </header>
                     <h2>{item.title}</h2>
                     <div className="compact-meta">
-                      <span>窗口：{splitOwners(item.owner).join("、") || "未指定"}</span>
+                      <span>{owner === allOwnersLabel ? "指派：" : "填報人："}{currentReporter || "未指定"}</span>
                       <span>期限：{item.dueDate}</span>
                       <span className={itemHasLink ? "doc-ok" : "doc-missing"}>
                         文件：{itemHasLink ? "已有連結" : "缺文件"}

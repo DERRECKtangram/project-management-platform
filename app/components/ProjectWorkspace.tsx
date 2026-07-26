@@ -24,6 +24,17 @@ function phaseClass(phase: string) {
   return "phase-close";
 }
 
+function splitPeople(value: string) {
+  return (value || "")
+    .split(/、|,|，|\r?\n/)
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
+
+function joinPeople(value: FormDataEntryValue[]) {
+  return value.map((item) => String(item).trim()).filter(Boolean).join("、");
+}
+
 function normalizeDateInput(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
 }
@@ -78,6 +89,10 @@ function reportEntries(item: WorkflowItem) {
   ].filter((entry) => entry.content.trim() || entry.link.trim());
 }
 
+function ownerChoices(projectDevelopers: string[], ownerValue = "") {
+  return Array.from(new Set([...projectDevelopers, ...splitPeople(ownerValue)])).filter(Boolean);
+}
+
 export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
   const { data, loading, message, setMessage, refresh } = useFlowData();
   const [saving, setSaving] = useState(false);
@@ -109,6 +124,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
     setMessage("");
 
     const form = new FormData(formElement);
+    const ownerValue = joinPeople(form.getAll("owner")) || String(form.get("ownerText") || "");
     try {
       const response = await fetch("/api/flow", {
         method: "POST",
@@ -119,7 +135,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
           projectName: project.name,
           phase: form.get("phase"),
           title: form.get("title"),
-          owner: form.get("owner"),
+          owner: ownerValue,
           content: form.get("content"),
           dueDate: form.get("dueDate"),
         }),
@@ -155,10 +171,11 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
   }
 
   async function saveEditedItem(item: WorkflowItem, form: FormData) {
+    const ownerValue = joinPeople(form.getAll("owner")) || String(form.get("ownerText") || "");
     await updateItem(item, {
       title: String(form.get("title") || ""),
       phase: String(form.get("phase") || ""),
-      owner: String(form.get("owner") || ""),
+      owner: ownerValue,
       dueDate: String(form.get("dueDate") || ""),
     });
     setMessage("小關內容已儲存。");
@@ -308,10 +325,21 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                     小關名稱
                     <input name="title" placeholder="例如 確認技術工期與資源" required />
                   </label>
-                  <label>
-                    負責窗口
-                    <input name="owner" placeholder="例如 Kenny、Max 或 Kenny,Max" />
-                  </label>
+                  <div className="form-field">
+                    <span>指派研發</span>
+                    {ownerChoices(project.developers).length > 0 ? (
+                      <div className="owner-checklist">
+                        {ownerChoices(project.developers).map((person) => (
+                          <label key={person}>
+                            <input name="owner" type="checkbox" value={person} />
+                            {person}
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <input name="ownerText" placeholder="例如 Kenny、Max 或 Kenny,Max" />
+                    )}
+                  </div>
                   <label>
                     結束日期
                     <input name="dueDate" type="date" />
@@ -364,7 +392,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                     </div>
                     <h3>{item.title}</h3>
                     <div className="compact-meta">
-                      <span>窗口：{item.owner}</span>
+                      <span>指派：{splitPeople(item.owner).join("、") || "未指定"}</span>
                       <span>文件：{itemReportLinks.length > 0 || item.documentUrl ? "已提供" : "未提供"}</span>
                       {item.completedAt ? <span>完成：{item.completedAt}</span> : null}
                     </div>
@@ -413,10 +441,21 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                               ))}
                             </select>
                           </label>
-                          <label>
-                            負責窗口
-                            <input name="owner" defaultValue={item.owner} placeholder="可用頓號、逗號或換行分隔多人" />
-                          </label>
+                          <div className="form-field">
+                            <span>指派研發</span>
+                            {ownerChoices(project.developers, item.owner).length > 0 ? (
+                              <div className="owner-checklist">
+                                {ownerChoices(project.developers, item.owner).map((person) => (
+                                  <label key={person}>
+                                    <input defaultChecked={splitPeople(item.owner).includes(person)} name="owner" type="checkbox" value={person} />
+                                    {person}
+                                  </label>
+                                ))}
+                              </div>
+                            ) : (
+                              <input name="ownerText" defaultValue={item.owner} placeholder="可用頓號、逗號或換行分隔多人" />
+                            )}
+                          </div>
                           <label>
                             期限
                             <input name="dueDate" defaultValue={normalizeDateInput(item.dueDate)} type="date" />

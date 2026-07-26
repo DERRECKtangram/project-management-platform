@@ -1431,7 +1431,8 @@ select {
   padding-top: 12px;
 }
 
-.inline-edit-form label {
+.inline-edit-form label,
+.inline-edit-form .form-field {
   color: var(--muted);
   display: grid;
   font-size: 12px;
@@ -2424,12 +2425,52 @@ select {
   padding: 12px;
 }
 
-.phase-add-form label {
+.phase-add-form label,
+.phase-add-form .form-field {
   color: var(--muted);
   display: grid;
   font-size: 12px;
   font-weight: 900;
   gap: 6px;
+}
+
+.phase-add-form .form-field > span,
+.inline-edit-form .form-field > span {
+  color: var(--muted);
+}
+
+.owner-checklist {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px;
+}
+
+.owner-checklist label {
+  align-items: center;
+  background: #f6f9fc;
+  border-radius: 999px;
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 900;
+  gap: 6px;
+  line-height: 1;
+  padding: 7px 10px;
+}
+
+.owner-checklist input {
+  accent-color: #1f6feb;
+  height: 14px;
+  min-height: 0;
+  padding: 0;
+  width: 14px;
 }
 
 .phase-add-form .primary-action {
