@@ -13,10 +13,16 @@ type ContentEntry = {
   link: string;
 };
 
+type PersonReport = {
+  status: string;
+  entries: ContentEntry[];
+};
+
 type WorkflowContent = {
   taskContent: string;
   taskLinks: string[];
   reportEntries: ContentEntry[];
+  reportsByOwner: Record<string, PersonReport>;
 };
 
 type ProjectWorkspaceProps = {
@@ -97,6 +103,28 @@ function parseWorkflowContent(item: WorkflowItem): WorkflowContent {
   if (item.content.startsWith(workflowContentMarker)) {
     try {
       const parsed = JSON.parse(item.content.slice(workflowContentMarker.length));
+      const reportsByOwner =
+        parsed.reportsByOwner && typeof parsed.reportsByOwner === "object"
+          ? Object.fromEntries(
+              Object.entries(parsed.reportsByOwner).map(([person, report]) => {
+                const typedReport = report as { status?: unknown; entries?: unknown };
+                return [
+                  person,
+                  {
+                    status: typeof typedReport.status === "string" ? typedReport.status : "未處理",
+                    entries: Array.isArray(typedReport.entries)
+                      ? typedReport.entries
+                          .map((entry: { content?: unknown; link?: unknown }) => ({
+                            content: typeof entry.content === "string" ? entry.content : "",
+                            link: typeof entry.link === "string" ? entry.link : "",
+                          }))
+                          .filter((entry: ContentEntry) => entry.content.trim() || entry.link.trim())
+                      : [],
+                  },
+                ];
+              }),
+            )
+          : {};
       return {
         taskContent: typeof parsed.taskContent === "string" ? parsed.taskContent : "",
         taskLinks: Array.isArray(parsed.taskLinks) ? parsed.taskLinks.filter((link: unknown) => typeof link === "string") : [],
@@ -108,20 +136,22 @@ function parseWorkflowContent(item: WorkflowItem): WorkflowContent {
               }))
               .filter((entry: ContentEntry) => entry.content.trim() || entry.link.trim())
           : [],
+        reportsByOwner,
       };
     } catch {
-      return { taskContent: "", taskLinks: [], reportEntries: [] };
+      return { taskContent: "", taskLinks: [], reportEntries: [], reportsByOwner: {} };
     }
   }
 
   if (item.content.startsWith(reportEntryMarker)) {
-    return { taskContent: "", taskLinks: [], reportEntries: parseLegacyReportEntries(item.content, item.documentUrl) };
+    return { taskContent: "", taskLinks: [], reportEntries: parseLegacyReportEntries(item.content, item.documentUrl), reportsByOwner: {} };
   }
 
   return {
     taskContent: item.content === "待補內容" ? "" : item.content,
     taskLinks: item.documentUrl ? [item.documentUrl] : [],
     reportEntries: [],
+    reportsByOwner: {},
   };
 }
 
@@ -131,7 +161,18 @@ function serializeWorkflowContent(content: WorkflowContent) {
   const reportEntries = content.reportEntries
     .map((entry) => ({ content: entry.content.trim(), link: entry.link.trim() }))
     .filter((entry) => entry.content || entry.link);
-  return `${workflowContentMarker}${JSON.stringify({ taskContent, taskLinks, reportEntries })}`;
+  const reportsByOwner = Object.fromEntries(
+    Object.entries(content.reportsByOwner).map(([person, report]) => [
+      person,
+      {
+        status: report.status || "未處理",
+        entries: report.entries
+          .map((entry) => ({ content: entry.content.trim(), link: entry.link.trim() }))
+          .filter((entry) => entry.content || entry.link),
+      },
+    ]),
+  );
+  return `${workflowContentMarker}${JSON.stringify({ taskContent, taskLinks, reportEntries, reportsByOwner })}`;
 }
 
 function ownerChoices(projectDevelopers: string[], ownerValue = "") {
@@ -198,6 +239,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
       taskContent: String(form.get("content") || ""),
       taskLinks: form.getAll("taskLink").map((link) => String(link)),
       reportEntries: [],
+      reportsByOwner: {},
     });
     try {
       const response = await fetch("/api/flow", {
@@ -443,7 +485,10 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                 const isEditing = editingItemId === item.id;
                 const itemCode = `${phaseNumber}-${itemIndex + 1}`;
                 const itemContent = parseWorkflowContent(item);
-                const itemReportLinks = itemContent.reportEntries.filter((entry) => entry.link.trim());
+                const itemReportLinks = [
+                  ...itemContent.reportEntries,
+                  ...Object.values(itemContent.reportsByOwner).flatMap((report) => report.entries),
+                ].filter((entry) => entry.link.trim());
                 const itemTaskLinks = itemContent.taskLinks.filter((link) => link.trim());
                 return (
                   <div

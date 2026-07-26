@@ -16,10 +16,16 @@ type ReportEntry = {
   link: string;
 };
 
+type PersonReport = {
+  status: string;
+  entries: ReportEntry[];
+};
+
 type WorkflowContent = {
   taskContent: string;
   taskLinks: string[];
   reportEntries: ReportEntry[];
+  reportsByOwner: Record<string, PersonReport>;
 };
 
 function splitOwners(value: string) {
@@ -33,6 +39,12 @@ function statusClass(status: string) {
   if (status === "已完成") return "done";
   if (status === "進行中") return "active";
   return "waiting";
+}
+
+function normalizeReportStatus(status?: string) {
+  if (status === "已完成") return "已完成";
+  if (status === "進行中") return "進行中";
+  return "未處理";
 }
 
 function phaseClass(phase: string) {
@@ -64,6 +76,28 @@ function parseWorkflowContent(item: WorkflowItem): WorkflowContent {
   if (item.content.startsWith(workflowContentMarker)) {
     try {
       const parsed = JSON.parse(item.content.slice(workflowContentMarker.length));
+      const reportsByOwner =
+        parsed.reportsByOwner && typeof parsed.reportsByOwner === "object"
+          ? Object.fromEntries(
+              Object.entries(parsed.reportsByOwner).map(([person, report]) => {
+                const typedReport = report as { status?: unknown; entries?: unknown };
+                return [
+                  person,
+                  {
+                    status: normalizeReportStatus(typeof typedReport.status === "string" ? typedReport.status : ""),
+                    entries: Array.isArray(typedReport.entries)
+                      ? typedReport.entries
+                          .map((entry: { content?: unknown; link?: unknown }) => ({
+                            content: typeof entry.content === "string" ? entry.content : "",
+                            link: typeof entry.link === "string" ? entry.link : "",
+                          }))
+                          .filter((entry: ReportEntry) => entry.content.trim() || entry.link.trim())
+                      : [],
+                  },
+                ];
+              }),
+            )
+          : {};
       return {
         taskContent: typeof parsed.taskContent === "string" ? parsed.taskContent : "",
         taskLinks: Array.isArray(parsed.taskLinks) ? parsed.taskLinks.filter((link: unknown) => typeof link === "string") : [],
@@ -75,64 +109,140 @@ function parseWorkflowContent(item: WorkflowItem): WorkflowContent {
               }))
               .filter((entry: ReportEntry) => entry.content.trim() || entry.link.trim())
           : [],
+        reportsByOwner,
       };
     } catch {
-      return { taskContent: "", taskLinks: [], reportEntries: [{ content: "", link: "" }] };
+      return { taskContent: "", taskLinks: [], reportEntries: [{ content: "", link: "" }], reportsByOwner: {} };
     }
   }
 
   if (item.content.startsWith(reportEntryMarker)) {
-    return { taskContent: "", taskLinks: [], reportEntries: parseLegacyReportEntries(item.content, item.documentUrl) };
+    return { taskContent: "", taskLinks: [], reportEntries: parseLegacyReportEntries(item.content, item.documentUrl), reportsByOwner: {} };
   }
 
   return {
     taskContent: item.content === "待補內容" ? "" : item.content,
     taskLinks: item.documentUrl ? [item.documentUrl] : [],
     reportEntries: [{ content: "", link: "" }],
+    reportsByOwner: {},
   };
 }
 
-function parseReportEntries(item: WorkflowItem): ReportEntry[] {
-  const entries = parseWorkflowContent(item).reportEntries;
+function entriesWithFallback(entries: ReportEntry[]) {
   return entries.length > 0 ? entries : [{ content: "", link: "" }];
 }
 
-function serializeWorkflowContent(item: WorkflowItem, entries: ReportEntry[]) {
-  const current = parseWorkflowContent(item);
-  const cleanEntries = entries
+function cleanReportEntries(entries: ReportEntry[]) {
+  return entries
     .map((entry) => ({ content: entry.content.trim(), link: entry.link.trim() }))
     .filter((entry) => entry.content || entry.link);
+}
+
+function getOwnerReport(item: WorkflowItem, reporter: string): PersonReport {
+  const current = parseWorkflowContent(item);
+  if (reporter !== allOwnersLabel) {
+    const ownerReport = current.reportsByOwner[reporter];
+    if (ownerReport) {
+      return { status: normalizeReportStatus(ownerReport.status), entries: entriesWithFallback(ownerReport.entries) };
+    }
+    if (current.reportEntries.some((entry) => entry.content.trim() || entry.link.trim())) {
+      return { status: normalizeReportStatus(item.status), entries: entriesWithFallback(current.reportEntries) };
+    }
+  } else {
+    const allEntries = [
+      ...current.reportEntries,
+      ...Object.entries(current.reportsByOwner).flatMap(([person, report]) =>
+        report.entries.map((entry) => ({
+          content: entry.content.trim() ? `${person}：${entry.content}` : "",
+          link: entry.link,
+        })),
+      ),
+    ].filter((entry) => entry.content.trim() || entry.link.trim());
+    if (allEntries.length > 0) {
+      return { status: normalizeReportStatus(item.status), entries: allEntries };
+    }
+  }
+
+  return {
+    status: normalizeReportStatus(item.status),
+    entries: entriesWithFallback(current.reportEntries),
+  };
+}
+
+function summarizeOwnerStatus(item: WorkflowItem, reporter: string) {
+  return reporter === allOwnersLabel ? normalizeReportStatus(item.status) : getOwnerReport(item, reporter).status;
+}
+
+function ownerHasReportLink(item: WorkflowItem, reporter: string) {
+  if (reporter === allOwnersLabel) {
+    const current = parseWorkflowContent(item);
+    return (
+      current.reportEntries.some((entry) => entry.link.trim()) ||
+      Object.values(current.reportsByOwner).some((report) => report.entries.some((entry) => entry.link.trim()))
+    );
+  }
+  return getOwnerReport(item, reporter).entries.some((entry) => entry.link.trim());
+}
+
+function aggregateItemStatus(item: WorkflowItem, reportsByOwner: Record<string, PersonReport>) {
+  const owners = splitOwners(item.owner);
+  if (owners.length === 0) return normalizeReportStatus(item.status);
+  const ownerStatuses = owners.map((person) => normalizeReportStatus(reportsByOwner[person]?.status));
+  if (ownerStatuses.every((status) => status === "已完成")) return "已完成";
+  if (ownerStatuses.some((status) => status === "進行中" || status === "已完成")) return "進行中";
+  return "未處理";
+}
+
+function serializeWorkflowContent(content: WorkflowContent) {
+  const cleanReportsByOwner = Object.fromEntries(
+    Object.entries(content.reportsByOwner).map(([person, report]) => [
+      person,
+      {
+        status: normalizeReportStatus(report.status),
+        entries: cleanReportEntries(report.entries),
+      },
+    ]),
+  );
   return `${workflowContentMarker}${JSON.stringify({
-    taskContent: current.taskContent.trim(),
-    taskLinks: current.taskLinks.map((link) => link.trim()).filter(Boolean),
-    reportEntries: cleanEntries,
+    taskContent: content.taskContent.trim(),
+    taskLinks: content.taskLinks.map((link) => link.trim()).filter(Boolean),
+    reportEntries: cleanReportEntries(content.reportEntries),
+    reportsByOwner: cleanReportsByOwner,
   })}`;
 }
 
-function firstReportLink(entries: ReportEntry[]) {
-  return entries.find((entry) => entry.link.trim())?.link.trim() ?? "";
+function firstReportLinkFromContent(content: WorkflowContent) {
+  return (
+    Object.values(content.reportsByOwner)
+      .flatMap((report) => report.entries)
+      .find((entry) => entry.link.trim())?.link.trim() ??
+    content.reportEntries.find((entry) => entry.link.trim())?.link.trim() ??
+    ""
+  );
 }
 
 function hasReportLink(item: WorkflowItem) {
-  return parseWorkflowContent(item).reportEntries.some((entry) => entry.link.trim());
+  return ownerHasReportLink(item, allOwnersLabel);
 }
 
 function ReportEntryEditor({
   item,
   onSave,
+  reporter,
   saving,
 }: {
   item: WorkflowItem;
   onSave: (item: WorkflowItem, patch: Partial<WorkflowItem>) => void;
+  reporter: string;
   saving: boolean;
 }) {
-  const [entries, setEntries] = useState<ReportEntry[]>(() => parseReportEntries(item));
+  const [entries, setEntries] = useState<ReportEntry[]>(() => getOwnerReport(item, reporter).entries);
   const [entryMessage, setEntryMessage] = useState("");
 
   useEffect(() => {
-    setEntries(parseReportEntries(item));
+    setEntries(getOwnerReport(item, reporter).entries);
     setEntryMessage("");
-  }, [item.id, item.content, item.documentUrl]);
+  }, [item.id, item.content, item.documentUrl, reporter]);
 
   function updateEntry(index: number, patch: Partial<ReportEntry>) {
     setEntries((current) => current.map((entry, entryIndex) => (entryIndex === index ? { ...entry, ...patch } : entry)));
@@ -185,7 +295,18 @@ function ReportEntryEditor({
         <button
           className="primary-action"
           disabled={saving}
-          onClick={() => onSave(item, { content: serializeWorkflowContent(item, entries), documentUrl: firstReportLink(entries) })}
+          onClick={() => {
+            const current = parseWorkflowContent(item);
+            const reportsByOwner = {
+              ...current.reportsByOwner,
+              [reporter]: {
+                status: getOwnerReport(item, reporter).status,
+                entries,
+              },
+            };
+            const nextContent = { ...current, reportsByOwner };
+            onSave(item, { content: serializeWorkflowContent(nextContent), documentUrl: firstReportLinkFromContent(nextContent) });
+          }}
           type="button"
         >
           儲存填報
@@ -225,24 +346,45 @@ export function PeopleWorkload() {
   const summary = useMemo(() => {
     return {
       all: scopedItems.length,
-      waiting: scopedItems.filter((item) => item.status === "未處理").length,
-      active: scopedItems.filter((item) => item.status === "進行中").length,
-      done: scopedItems.filter((item) => item.status === "已完成").length,
-      missingDocs: scopedItems.filter((item) => !hasReportLink(item)).length,
+      waiting: scopedItems.filter((item) => summarizeOwnerStatus(item, owner) === "未處理").length,
+      active: scopedItems.filter((item) => summarizeOwnerStatus(item, owner) === "進行中").length,
+      done: scopedItems.filter((item) => summarizeOwnerStatus(item, owner) === "已完成").length,
+      missingDocs: scopedItems.filter((item) => !ownerHasReportLink(item, owner)).length,
     };
-  }, [scopedItems]);
+  }, [owner, scopedItems]);
 
   const visibleItems = useMemo(() => {
     return scopedItems
-      .filter((item) => statusFilter === "全部狀態" || item.status === statusFilter)
+      .filter((item) => statusFilter === "全部狀態" || summarizeOwnerStatus(item, owner) === statusFilter)
       .sort((a, b) => {
-        if (a.status === "已完成" && b.status !== "已完成") return 1;
-        if (a.status !== "已完成" && b.status === "已完成") return -1;
+        const aStatus = summarizeOwnerStatus(a, owner);
+        const bStatus = summarizeOwnerStatus(b, owner);
+        if (aStatus === "已完成" && bStatus !== "已完成") return 1;
+        if (aStatus !== "已完成" && bStatus === "已完成") return -1;
         return a.dueDate.localeCompare(b.dueDate);
       });
-  }, [scopedItems, statusFilter]);
+  }, [owner, scopedItems, statusFilter]);
 
   const phases = data.phases.length > 0 ? data.phases : defaultPhases;
+  const itemCodeById = useMemo(() => {
+    const phaseNumberByName = new Map(phases.map((phase, index) => [phase, index + 1]));
+    const codes = new Map<string, string>();
+    data.projects.forEach((project) => {
+      phases.forEach((phase) => {
+        data.workflowItems
+          .filter((item) => item.projectCode === project.code && item.phase === phase)
+          .sort((a, b) => {
+            const positionDiff = (a.position ?? 0) - (b.position ?? 0);
+            if (positionDiff !== 0) return positionDiff;
+            return (a.createdAt ?? "").localeCompare(b.createdAt ?? "");
+          })
+          .forEach((item, index) => {
+            codes.set(item.id, `${phaseNumberByName.get(phase) ?? 1}-${index + 1}`);
+          });
+      });
+    });
+    return codes;
+  }, [data.projects, data.workflowItems, phases]);
 
   async function updateItem(item: WorkflowItem, patch: Partial<WorkflowItem>) {
     setSavingId(item.id);
@@ -263,6 +405,29 @@ export function PeopleWorkload() {
     } finally {
       setSavingId("");
     }
+  }
+
+  async function updateOwnerStatus(item: WorkflowItem, reporter: string, status: string) {
+    if (reporter === allOwnersLabel) {
+      setMessage("請先選擇一位填報人員，再更新個人進度。");
+      return;
+    }
+
+    const current = parseWorkflowContent(item);
+    const currentReport = getOwnerReport(item, reporter);
+    const reportsByOwner = {
+      ...current.reportsByOwner,
+      [reporter]: {
+        ...currentReport,
+        status: normalizeReportStatus(status),
+      },
+    };
+    const nextContent = { ...current, reportsByOwner };
+    await updateItem(item, {
+      status: aggregateItemStatus(item, reportsByOwner),
+      content: serializeWorkflowContent(nextContent),
+      documentUrl: firstReportLinkFromContent(nextContent),
+    });
   }
 
   return (
@@ -359,18 +524,23 @@ export function PeopleWorkload() {
               </header>
               {phaseItems.length === 0 ? <p className="plain-copy">目前沒有小關</p> : null}
               {phaseItems.map((item) => {
-                const itemStatusClass = statusClass(item.status);
+                const itemStatus = summarizeOwnerStatus(item, owner);
+                const itemStatusClass = statusClass(itemStatus);
                 const isEditing = editingId === item.id;
                 const workflowContent = parseWorkflowContent(item);
-                const reportEntries = parseReportEntries(item);
+                const reportEntries = getOwnerReport(item, owner).entries;
                 const reportLinks = reportEntries.filter((entry) => entry.link.trim());
-                const itemHasLink = reportLinks.length > 0 || Boolean(item.documentUrl);
+                const itemHasLink = ownerHasReportLink(item, owner);
                 const currentReporter = owner === allOwnersLabel ? splitOwners(item.owner).join("、") : owner;
+                const itemCode = itemCodeById.get(item.id) ?? `${phases.indexOf(item.phase) + 1}-?`;
                 return (
                   <div className={`rd-task-card status-${itemStatusClass}`} key={item.id}>
                     <header>
                       <span>{item.projectName}</span>
-                      <b className={itemStatusClass}>{item.status}</b>
+                      <div className="rd-card-badges">
+                        <em>{item.phase} {itemCode}</em>
+                        <b className={itemStatusClass}>{itemStatus}</b>
+                      </div>
                     </header>
                     <h2>{item.title}</h2>
                     <div className="compact-meta">
@@ -415,14 +585,23 @@ export function PeopleWorkload() {
                     </div>
                     {isEditing ? (
                       <div className="rd-edit-panel">
-                        <ReportEntryEditor item={item} onSave={(targetItem, patch) => void updateItem(targetItem, patch)} saving={savingId === item.id} />
+                        {owner === allOwnersLabel ? (
+                          <p className="entry-warning">請先在上方選擇一位填報人員，再編輯個人內容與進度。</p>
+                        ) : (
+                          <ReportEntryEditor
+                            item={item}
+                            onSave={(targetItem, patch) => void updateItem(targetItem, patch)}
+                            reporter={owner}
+                            saving={savingId === item.id}
+                          />
+                        )}
                         <div className="rd-actions">
                           {statuses.map((status) => (
                             <button
-                              className={status === item.status ? "primary-action" : "secondary-action"}
-                              disabled={savingId === item.id}
+                              className={status === itemStatus ? "primary-action" : "secondary-action"}
+                              disabled={savingId === item.id || owner === allOwnersLabel}
                               key={status}
-                              onClick={() => void updateItem(item, { status })}
+                              onClick={() => void updateOwnerStatus(item, owner, status)}
                               type="button"
                             >
                               {status}
