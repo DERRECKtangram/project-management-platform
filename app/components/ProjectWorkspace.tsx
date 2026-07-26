@@ -55,9 +55,9 @@ function displayDate(value: string) {
 
 export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
   const { data, loading, message, setMessage, refresh } = useFlowData();
-  const [phase, setPhase] = useState("提案");
   const [saving, setSaving] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [addingPhase, setAddingPhase] = useState<string | null>(null);
   const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
   const [dropPhase, setDropPhase] = useState<string | null>(null);
 
@@ -105,7 +105,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
         throw new Error(result.error || "新增小關失敗");
       }
       formElement.reset();
-      setPhase("提案");
+      setAddingPhase(null);
       await refresh();
       setMessage("小關已新增。");
     } catch (error) {
@@ -220,52 +220,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
         </div>
       </section>
 
-      <section className="panel">
-        <div className="section-title">
-          <div>
-            <p>新增小關</p>
-            <h2>每次開會後，把後續要做的事拆成可追蹤節點</h2>
-          </div>
-        </div>
-        <form className="meeting-form project-form" onSubmit={createItem}>
-          <label>
-            階段
-            <select name="phase" onChange={(event) => setPhase(event.target.value)} value={phase}>
-              {data.phases.map((itemPhase) => (
-                <option key={itemPhase}>{itemPhase}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            小關名稱
-            <input name="title" placeholder="例如 確認技術工期與資源" required />
-          </label>
-          <label>
-            負責窗口
-            <input name="owner" placeholder="例如 Max" />
-          </label>
-          <label>
-            角色
-            <select name="role" defaultValue="研發人員">
-              {roles.map((role) => (
-                <option key={role}>{role}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            結束日期
-            <input name="dueDate" type="date" />
-          </label>
-          <label className="wide-field">
-            對應內容
-            <textarea name="content" placeholder="說明這個小關要完成什麼、方向是什麼、驗收重點是什麼" />
-          </label>
-          <button className="primary-action" disabled={saving} type="submit">
-            {saving ? "新增中" : "新增小關"}
-          </button>
-        </form>
-        {message ? <p className="form-message left">{message}</p> : null}
-      </section>
+      {message ? <p className="form-message board-message">{message}</p> : null}
 
       <section className="flow-board">
         {data.phases.map((itemPhase) => {
@@ -288,11 +243,55 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                 <div className="phase-title-line">
                   <span>{itemPhase}</span>
                 </div>
-                <div className={`phase-state-pill ${state.className}`}>
-                  <strong>{state.label}</strong>
-                  {phaseDue ? <small>最晚 {displayDate(phaseDue)}</small> : null}
+                <div className="phase-header-actions">
+                  <div className={`phase-state-pill ${state.className}`}>
+                    <strong>{state.label}</strong>
+                    {phaseDue ? <small>最晚 {displayDate(phaseDue)}</small> : null}
+                  </div>
+                  <button
+                    className="phase-add-button"
+                    onClick={() => {
+                      setAddingPhase(addingPhase === itemPhase ? null : itemPhase);
+                      setEditingItemId(null);
+                    }}
+                    type="button"
+                  >
+                    {addingPhase === itemPhase ? "收起" : "新增"}
+                  </button>
                 </div>
               </header>
+              {addingPhase === itemPhase ? (
+                <form className="phase-add-form" onSubmit={createItem}>
+                  <input name="phase" type="hidden" value={itemPhase} />
+                  <label>
+                    小關名稱
+                    <input name="title" placeholder="例如 確認技術工期與資源" required />
+                  </label>
+                  <label>
+                    負責窗口
+                    <input name="owner" placeholder="例如 Max" />
+                  </label>
+                  <label>
+                    角色
+                    <select name="role" defaultValue="研發人員">
+                      {roles.map((role) => (
+                        <option key={role}>{role}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    結束日期
+                    <input name="dueDate" type="date" />
+                  </label>
+                  <label>
+                    對應內容
+                    <textarea name="content" placeholder="說明這個小關要完成什麼" />
+                  </label>
+                  <button className="primary-action" disabled={saving} type="submit">
+                    {saving ? "新增中" : "建立小關"}
+                  </button>
+                </form>
+              ) : null}
               {phaseItems.length === 0 ? <p className="plain-copy">尚未新增小關</p> : null}
               {phaseItems.map((item, itemIndex) => {
                 const overdue = isOverdue(item);

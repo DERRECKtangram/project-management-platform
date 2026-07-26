@@ -1041,6 +1041,15 @@ select {
   text-align: right;
 }
 
+.form-message.board-message {
+  align-self: flex-end;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 0;
+  padding: 10px 12px;
+}
+
 .meeting-form {
   display: grid;
   gap: 12px;
@@ -1058,6 +1067,9 @@ select {
 .meeting-form input,
 .meeting-form select,
 .meeting-form textarea,
+.phase-add-form input,
+.phase-add-form select,
+.phase-add-form textarea,
 .editable-task-row select {
   background: #ffffff;
   border: 1px solid var(--line);
@@ -1070,6 +1082,11 @@ select {
 
 .meeting-form textarea {
   min-height: 96px;
+  resize: vertical;
+}
+
+.phase-add-form textarea {
+  min-height: 74px;
   resize: vertical;
 }
 
@@ -2195,6 +2212,14 @@ select {
   letter-spacing: 0;
 }
 
+.phase-header-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .phase-header strong {
   color: var(--ink);
 }
@@ -2244,6 +2269,44 @@ select {
 
 .phase-state-pill.waiting strong {
   color: #667085;
+}
+
+.phase-add-button {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--blue);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 950;
+  min-height: 34px;
+  padding: 0 13px;
+}
+
+.phase-add-button:hover {
+  border-color: rgba(31, 111, 235, 0.42);
+  box-shadow: 0 8px 18px rgba(31, 111, 235, 0.1);
+}
+
+.phase-add-form {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px dashed rgba(31, 111, 235, 0.28);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.phase-add-form label {
+  color: var(--muted);
+  display: grid;
+  font-size: 12px;
+  font-weight: 900;
+  gap: 6px;
+}
+
+.phase-add-form .primary-action {
+  min-height: 40px;
 }
 
 @media (max-width: 1180px) {
