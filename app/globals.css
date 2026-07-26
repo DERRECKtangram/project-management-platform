@@ -2246,6 +2246,48 @@ select {
   gap: 6px;
 }
 
+.report-entry-editor {
+  display: grid;
+  gap: 12px;
+}
+
+.report-entry-row {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.report-entry-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.report-entry-head strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.text-danger-button {
+  background: transparent;
+  border: 0;
+  color: var(--red);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 4px 0;
+}
+
+.report-entry-actions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+}
+
 .rd-phase-badge {
   border-radius: 8px;
   display: inline-flex;

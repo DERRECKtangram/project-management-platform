@@ -5,6 +5,8 @@ import { useMemo, useState, type DragEvent, type FormEvent } from "react";
 import type { WorkflowItem } from "./flowTypes";
 import { useFlowData } from "./useFlowData";
 
+const reportEntryMarker = "__RD_REPORT_ENTRIES_V1__";
+
 type ProjectWorkspaceProps = {
   code: string;
 };
@@ -49,6 +51,31 @@ function displayDate(value: string) {
   if (!normalizeDateInput(value)) return value;
   const [year, month, day] = value.split("-");
   return `${year}/${Number(month)}/${Number(day)}`;
+}
+
+function reportEntries(item: WorkflowItem) {
+  if (item.content.startsWith(reportEntryMarker)) {
+    try {
+      const parsed = JSON.parse(item.content.slice(reportEntryMarker.length));
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((entry) => ({
+            content: typeof entry.content === "string" ? entry.content : "",
+            link: typeof entry.link === "string" ? entry.link : "",
+          }))
+          .filter((entry) => entry.content.trim() || entry.link.trim());
+      }
+    } catch {
+      return [{ content: item.content, link: item.documentUrl }];
+    }
+  }
+
+  return [
+    {
+      content: item.content === "待補內容" ? "" : item.content,
+      link: item.documentUrl,
+    },
+  ].filter((entry) => entry.content.trim() || entry.link.trim());
 }
 
 export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
@@ -303,6 +330,8 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                 const overdue = isOverdue(item);
                 const isEditing = editingItemId === item.id;
                 const itemCode = `${phaseNumber}-${itemIndex + 1}`;
+                const itemReportEntries = reportEntries(item);
+                const itemReportLinks = itemReportEntries.filter((entry) => entry.link.trim());
                 return (
                   <div
                     className={`flow-item ${overdue ? "overdue" : ""} ${draggingItemId === item.id ? "dragging" : ""}`}
@@ -336,19 +365,25 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                     <h3>{item.title}</h3>
                     <div className="compact-meta">
                       <span>窗口：{item.owner}</span>
-                      <span>文件：{item.documentUrl ? "已提供" : "未提供"}</span>
+                      <span>文件：{itemReportLinks.length > 0 || item.documentUrl ? "已提供" : "未提供"}</span>
                       {item.completedAt ? <span>完成：{item.completedAt}</span> : null}
                     </div>
                     <section className="rd-content-preview">
                       <span>研發填報內容</span>
-                      <p>{item.content === "待補內容" ? "尚未填寫" : item.content}</p>
+                      {itemReportEntries.some((entry) => entry.content.trim()) ? (
+                        itemReportEntries.map((entry, index) =>
+                          entry.content.trim() ? <p key={`${item.id}-pm-preview-${index}`}>{entry.content}</p> : null,
+                        )
+                      ) : (
+                        <p>尚未填寫</p>
+                      )}
                     </section>
                     <div className="compact-actions">
-                      {item.documentUrl ? (
-                        <a className="doc-link" href={item.documentUrl} rel="noreferrer" target="_blank">
-                          開啟文件
+                      {itemReportLinks.slice(0, 2).map((entry, index) => (
+                        <a className="doc-link" href={entry.link} key={`${item.id}-pm-link-${index}`} rel="noreferrer" target="_blank">
+                          開啟文件{itemReportLinks.length > 1 ? index + 1 : ""}
                         </a>
-                      ) : null}
+                      ))}
                       <button
                         className="secondary-action"
                         onClick={() => setEditingItemId(isEditing ? null : item.id)}

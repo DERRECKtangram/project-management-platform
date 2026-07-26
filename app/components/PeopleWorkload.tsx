@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { WorkflowItem } from "./flowTypes";
 import { useFlowData } from "./useFlowData";
 
 const statuses = ["未處理", "進行中", "已完成"];
 const defaultPhases = ["提案", "啟動", "期中", "期末"];
+const reportEntryMarker = "__RD_REPORT_ENTRIES_V1__";
+
+type ReportEntry = {
+  content: string;
+  link: string;
+};
 
 function splitOwners(value: string) {
   return (value || "未指定")
@@ -26,6 +32,115 @@ function phaseClass(phase: string) {
   if (phase === "啟動") return "phase-launch";
   if (phase === "期中") return "phase-midterm";
   return "phase-close";
+}
+
+function parseReportEntries(item: WorkflowItem): ReportEntry[] {
+  if (item.content.startsWith(reportEntryMarker)) {
+    try {
+      const parsed = JSON.parse(item.content.slice(reportEntryMarker.length));
+      if (Array.isArray(parsed)) {
+        const entries = parsed
+          .map((entry) => ({
+            content: typeof entry.content === "string" ? entry.content : "",
+            link: typeof entry.link === "string" ? entry.link : "",
+          }))
+          .filter((entry) => entry.content.trim() || entry.link.trim());
+        return entries.length > 0 ? entries : [{ content: "", link: "" }];
+      }
+    } catch {
+      return [{ content: item.content, link: item.documentUrl }];
+    }
+  }
+
+  return [
+    {
+      content: item.content === "待補內容" ? "" : item.content,
+      link: item.documentUrl,
+    },
+  ];
+}
+
+function serializeReportEntries(entries: ReportEntry[]) {
+  const cleanEntries = entries
+    .map((entry) => ({ content: entry.content.trim(), link: entry.link.trim() }))
+    .filter((entry) => entry.content || entry.link);
+  return cleanEntries.length > 0 ? `${reportEntryMarker}${JSON.stringify(cleanEntries)}` : "待補內容";
+}
+
+function firstReportLink(entries: ReportEntry[]) {
+  return entries.find((entry) => entry.link.trim())?.link.trim() ?? "";
+}
+
+function hasReportLink(item: WorkflowItem) {
+  return parseReportEntries(item).some((entry) => entry.link.trim()) || Boolean(item.documentUrl);
+}
+
+function ReportEntryEditor({
+  item,
+  onSave,
+  saving,
+}: {
+  item: WorkflowItem;
+  onSave: (item: WorkflowItem, patch: Partial<WorkflowItem>) => void;
+  saving: boolean;
+}) {
+  const [entries, setEntries] = useState<ReportEntry[]>(() => parseReportEntries(item));
+
+  useEffect(() => {
+    setEntries(parseReportEntries(item));
+  }, [item.id, item.content, item.documentUrl]);
+
+  function updateEntry(index: number, patch: Partial<ReportEntry>) {
+    setEntries((current) => current.map((entry, entryIndex) => (entryIndex === index ? { ...entry, ...patch } : entry)));
+  }
+
+  function removeEntry(index: number) {
+    setEntries((current) => (current.length === 1 ? [{ content: "", link: "" }] : current.filter((_, entryIndex) => entryIndex !== index)));
+  }
+
+  return (
+    <div className="report-entry-editor">
+      {entries.map((entry, index) => (
+        <section className="report-entry-row" key={`${item.id}-${index}`}>
+          <div className="report-entry-head">
+            <strong>內容 {index + 1}</strong>
+            <button className="text-danger-button" onClick={() => removeEntry(index)} type="button">
+              刪除
+            </button>
+          </div>
+          <label>
+            研發填報內容
+            <textarea
+              onChange={(event) => updateEntry(index, { content: event.currentTarget.value })}
+              placeholder="寫下目前完成內容、討論結論、測試結果或需要 PM 知道的方向"
+              value={entry.content}
+            />
+          </label>
+          <label>
+            文件或 Google 連結
+            <input
+              onChange={(event) => updateEntry(index, { link: event.currentTarget.value })}
+              placeholder="貼上成果文件連結"
+              value={entry.link}
+            />
+          </label>
+        </section>
+      ))}
+      <div className="report-entry-actions">
+        <button className="secondary-action" onClick={() => setEntries((current) => [...current, { content: "", link: "" }])} type="button">
+          ＋ 新增內容與連結
+        </button>
+        <button
+          className="primary-action"
+          disabled={saving}
+          onClick={() => onSave(item, { content: serializeReportEntries(entries), documentUrl: firstReportLink(entries) })}
+          type="button"
+        >
+          儲存填報
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function PeopleWorkload() {
@@ -61,7 +176,7 @@ export function PeopleWorkload() {
       waiting: scopedItems.filter((item) => item.status === "未處理").length,
       active: scopedItems.filter((item) => item.status === "進行中").length,
       done: scopedItems.filter((item) => item.status === "已完成").length,
-      missingDocs: scopedItems.filter((item) => !item.documentUrl).length,
+      missingDocs: scopedItems.filter((item) => !hasReportLink(item)).length,
     };
   }, [scopedItems]);
 
@@ -194,6 +309,9 @@ export function PeopleWorkload() {
               {phaseItems.map((item) => {
                 const itemStatusClass = statusClass(item.status);
                 const isEditing = editingId === item.id;
+                const reportEntries = parseReportEntries(item);
+                const reportLinks = reportEntries.filter((entry) => entry.link.trim());
+                const itemHasLink = reportLinks.length > 0 || Boolean(item.documentUrl);
                 return (
                   <div className={`rd-task-card status-${itemStatusClass}`} key={item.id}>
                     <header>
@@ -204,50 +322,33 @@ export function PeopleWorkload() {
                     <div className="compact-meta">
                       <span>窗口：{splitOwners(item.owner).join("、") || "未指定"}</span>
                       <span>期限：{item.dueDate}</span>
-                      <span className={item.documentUrl ? "doc-ok" : "doc-missing"}>
-                        文件：{item.documentUrl ? "已有連結" : "缺文件"}
+                      <span className={itemHasLink ? "doc-ok" : "doc-missing"}>
+                        文件：{itemHasLink ? "已有連結" : "缺文件"}
                       </span>
                     </div>
                     <section className="rd-content-preview">
                       <span>研發填報內容</span>
-                      <p>{item.content === "待補內容" ? "尚未填寫" : item.content}</p>
+                      {reportEntries.some((entry) => entry.content.trim()) ? (
+                        reportEntries.map((entry, index) =>
+                          entry.content.trim() ? <p key={`${item.id}-preview-${index}`}>{entry.content}</p> : null,
+                        )
+                      ) : (
+                        <p>尚未填寫</p>
+                      )}
                     </section>
                     <div className="compact-actions">
-                      {item.documentUrl ? (
-                        <a className="doc-link" href={item.documentUrl} rel="noreferrer" target="_blank">
-                          開啟文件
+                      {reportLinks.slice(0, 2).map((entry, index) => (
+                        <a className="doc-link" href={entry.link} key={`${item.id}-link-${index}`} rel="noreferrer" target="_blank">
+                          開啟文件{reportLinks.length > 1 ? index + 1 : ""}
                         </a>
-                      ) : null}
+                      ))}
                       <button className="secondary-action" onClick={() => setEditingId(isEditing ? "" : item.id)} type="button">
                         {isEditing ? "收起" : "編輯"}
                       </button>
                     </div>
                     {isEditing ? (
                       <div className="rd-edit-panel">
-                        <label>
-                          研發填報內容
-                          <textarea
-                            defaultValue={item.content === "待補內容" ? "" : item.content}
-                            onBlur={(event) => {
-                              if (event.currentTarget.value !== item.content) {
-                                void updateItem(item, { content: event.currentTarget.value });
-                              }
-                            }}
-                            placeholder="寫下目前完成內容、討論結論、測試結果或需要 PM 知道的方向"
-                          />
-                        </label>
-                        <label>
-                          文件或 Google 連結
-                          <input
-                            defaultValue={item.documentUrl}
-                            onBlur={(event) => {
-                              if (event.currentTarget.value !== item.documentUrl) {
-                                void updateItem(item, { documentUrl: event.currentTarget.value });
-                              }
-                            }}
-                            placeholder="貼上成果文件連結"
-                          />
-                        </label>
+                        <ReportEntryEditor item={item} onSave={(targetItem, patch) => void updateItem(targetItem, patch)} saving={savingId === item.id} />
                         <div className="rd-actions">
                           {statuses.map((status) => (
                             <button
