@@ -343,6 +343,8 @@ export function PeopleWorkload() {
     return new Map(data.projects.map((project) => [project.code, project.name]));
   }, [data.projects]);
 
+  const phases = data.phases.length > 0 ? data.phases : defaultPhases;
+
   const scopedItems = useMemo(() => {
     return data.workflowItems.filter((item) => projectCode === "全部專案" || item.projectCode === projectCode);
   }, [data.workflowItems, projectCode]);
@@ -371,21 +373,37 @@ export function PeopleWorkload() {
     };
   }, [reportCards]);
 
+  const itemRankById = useMemo(() => {
+    const ranks = new Map<string, number>();
+    const phaseNumberByName = new Map(phases.map((phase, index) => [phase, index + 1]));
+    data.projects.forEach((project, projectIndex) => {
+      phases.forEach((phase) => {
+        data.workflowItems
+          .filter((item) => item.projectCode === project.code && item.phase === phase)
+          .sort((a, b) => {
+            const positionDiff = (a.position ?? 0) - (b.position ?? 0);
+            if (positionDiff !== 0) return positionDiff;
+            return (a.createdAt ?? "").localeCompare(b.createdAt ?? "");
+          })
+          .forEach((item, index) => {
+            const phaseNumber = phaseNumberByName.get(phase) ?? 1;
+            ranks.set(item.id, projectIndex * 1000000 + phaseNumber * 10000 + index);
+          });
+      });
+    });
+    return ranks;
+  }, [data.projects, data.workflowItems, phases]);
+
   const visibleCards = useMemo(() => {
     return reportCards
       .filter((card) => statusFilter === "全部狀態" || summarizeOwnerStatus(card.item, card.reporter) === statusFilter)
       .sort((a, b) => {
-        const aStatus = summarizeOwnerStatus(a.item, a.reporter);
-        const bStatus = summarizeOwnerStatus(b.item, b.reporter);
-        if (aStatus === "已完成" && bStatus !== "已完成") return 1;
-        if (aStatus !== "已完成" && bStatus === "已完成") return -1;
-        const dueDiff = a.item.dueDate.localeCompare(b.item.dueDate);
-        if (dueDiff !== 0) return dueDiff;
+        const rankDiff = (itemRankById.get(a.item.id) ?? 0) - (itemRankById.get(b.item.id) ?? 0);
+        if (rankDiff !== 0) return rankDiff;
         return a.reporter.localeCompare(b.reporter);
       });
-  }, [reportCards, statusFilter]);
+  }, [itemRankById, reportCards, statusFilter]);
 
-  const phases = data.phases.length > 0 ? data.phases : defaultPhases;
   const itemCodeById = useMemo(() => {
     const phaseNumberByName = new Map(phases.map((phase, index) => [phase, index + 1]));
     const codes = new Map<string, string>();
