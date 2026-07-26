@@ -6,7 +6,6 @@ import type { WorkflowItem } from "./flowTypes";
 import { useFlowData } from "./useFlowData";
 
 const roles = ["專案管理人員", "研發人員", "管理層"];
-const statuses = ["未處理", "進行中", "已完成"];
 
 type ProjectWorkspaceProps = {
   code: string;
@@ -93,7 +92,6 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
           role: form.get("role"),
           content: form.get("content"),
           dueDate: form.get("dueDate"),
-          documentUrl: form.get("documentUrl"),
         }),
       });
       const result = (await response.json()) as { error?: string };
@@ -133,8 +131,6 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
       owner: String(form.get("owner") || ""),
       role: String(form.get("role") || ""),
       dueDate: String(form.get("dueDate") || ""),
-      content: String(form.get("content") || ""),
-      documentUrl: String(form.get("documentUrl") || ""),
     });
     setMessage("小關內容已儲存。");
     setEditingItemId(null);
@@ -253,10 +249,6 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
           <label>
             結束日期
             <input name="dueDate" type="date" />
-          </label>
-          <label className="wide-field">
-            文件或 Google 連結
-            <input name="documentUrl" placeholder="https://docs.google.com/..." />
           </label>
           <label className="wide-field">
             對應內容
@@ -389,28 +381,8 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                             期限
                             <input name="dueDate" defaultValue={normalizeDateInput(item.dueDate)} type="date" />
                           </label>
-                          <label className="wide-field">
-                            研發填報內容
-                            <textarea name="content" defaultValue={item.content === "待補內容" ? "" : item.content} />
-                          </label>
-                          <label className="wide-field">
-                            文件或 Google 連結
-                            <input name="documentUrl" defaultValue={item.documentUrl} placeholder="貼上 Google 文件或雲端連結" />
-                          </label>
                           <button className="secondary-action" type="submit">儲存小關</button>
                         </form>
-                        <div className="flow-actions">
-                          {statuses.map((status) => (
-                            <button
-                              className={status === item.status ? "primary-action" : "secondary-action"}
-                              key={status}
-                              onClick={() => void updateItem(item, { status })}
-                              type="button"
-                            >
-                              {status}
-                            </button>
-                          ))}
-                        </div>
                       </>
                     ) : null}
                   </div>
