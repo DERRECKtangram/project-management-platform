@@ -37,6 +37,12 @@ export function DashboardHome() {
           <p>給研發人員使用：先選專案與窗口，只處理自己負責的小關，完成後貼上 Google 或文件連結。</p>
           <strong>進入填報</strong>
         </Link>
+        <Link className="home-action-card summary-card" href="/summary">
+          <span>成果彙整</span>
+          <h2>合併研發內容，快速看成果</h2>
+          <p>給計畫人員使用：按照專案與小關，把每位研發填報的內容、狀態與文件連結集中查看。</p>
+          <strong>查看彙整</strong>
+        </Link>
       </section>
 
       <section className="metric-grid soft-metrics">

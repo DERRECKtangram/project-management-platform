@@ -1942,7 +1942,7 @@ select {
 .home-actions {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 16px;
 }
 
@@ -2010,6 +2010,217 @@ select {
 
 .rd-card strong {
   background: #d9fbe8;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fff7df 100%);
+}
+
+.summary-card span,
+.summary-card strong {
+  color: var(--amber);
+}
+
+.summary-card strong {
+  background: #fff0c2;
+}
+
+.summary-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.summary-filter-panel {
+  align-items: end;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+}
+
+.summary-filter-panel span {
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.summary-filter-panel h2 {
+  color: var(--ink);
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.2;
+  margin: 6px 0 0;
+}
+
+.summary-filter-panel label {
+  color: var(--muted);
+  display: grid;
+  font-size: 13px;
+  font-weight: 900;
+  gap: 7px;
+}
+
+.summary-metrics {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.summary-metrics article {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  min-height: 100px;
+  padding: 16px;
+}
+
+.summary-metrics span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.summary-metrics strong {
+  color: var(--ink);
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.summary-list {
+  display: grid;
+  gap: 14px;
+}
+
+.summary-list > .summary-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-left: 8px solid var(--blue);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(16, 24, 40, 0.05);
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.summary-list > .summary-card.phase-proposal {
+  border-left-color: var(--amber);
+}
+
+.summary-list > .summary-card.phase-launch {
+  border-left-color: var(--blue);
+}
+
+.summary-list > .summary-card.phase-midterm {
+  border-left-color: var(--purple);
+}
+
+.summary-list > .summary-card.phase-close {
+  border-left-color: var(--green);
+}
+
+.summary-card > header,
+.summary-card-badges,
+.person-summary header {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.summary-card > header span {
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.summary-card > header h2 {
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.25;
+  margin: 5px 0 0;
+}
+
+.summary-card-badges b,
+.summary-card-badges strong,
+.person-summary header span {
+  background: #f2f6fb;
+  border-radius: 999px;
+  color: var(--nav);
+  font-size: 13px;
+  font-weight: 900;
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+
+.summary-card-badges strong.done,
+.person-summary header span.done {
+  background: #dcfce7;
+  color: var(--green);
+}
+
+.summary-card-badges strong.active,
+.person-summary header span.active {
+  background: #dbeafe;
+  color: var(--blue);
+}
+
+.summary-card-badges strong.waiting,
+.person-summary header span.waiting {
+  background: #f3f6fa;
+  color: #475467;
+}
+
+.summary-report-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.person-summary {
+  background: #f7fff9;
+  border: 1px solid #bcefd0;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.person-summary header strong {
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.person-report-entry {
+  background: #ffffff;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+}
+
+.person-report-entry p {
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.person-report-entry a {
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.person-report-entry small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .soft-metrics article:nth-child(1) {
@@ -2667,7 +2878,10 @@ select {
   .rd-board,
   .rd-status-summary,
   .light-people-grid,
-  .meeting-form {
+  .meeting-form,
+  .summary-filter-panel,
+  .summary-metrics,
+  .summary-report-grid {
     grid-template-columns: 1fr;
   }
 

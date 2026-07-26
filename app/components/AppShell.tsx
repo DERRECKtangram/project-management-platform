@@ -5,6 +5,7 @@ const navItems = [
   { href: "/", label: "首頁", icon: "首" },
   { href: "/projects", label: "專案管理", icon: "管" },
   { href: "/people", label: "研發填報", icon: "研" },
+  { href: "/summary", label: "成果彙整", icon: "整" },
 ];
 
 type AppShellProps = {
