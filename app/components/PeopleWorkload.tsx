@@ -6,11 +6,26 @@ import type { WorkflowItem } from "./flowTypes";
 import { useFlowData } from "./useFlowData";
 
 const statuses = ["未處理", "進行中", "已完成"];
+const defaultPhases = ["提案", "啟動", "期中", "期末"];
+
+function splitOwners(value: string) {
+  return (value || "未指定")
+    .split(/、|,|，|\r?\n/)
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
 
 function statusClass(status: string) {
   if (status === "已完成") return "done";
   if (status === "進行中") return "active";
   return "waiting";
+}
+
+function phaseClass(phase: string) {
+  if (phase === "提案") return "phase-proposal";
+  if (phase === "啟動") return "phase-launch";
+  if (phase === "期中") return "phase-midterm";
+  return "phase-close";
 }
 
 export function PeopleWorkload() {
@@ -19,9 +34,10 @@ export function PeopleWorkload() {
   const [projectCode, setProjectCode] = useState("全部專案");
   const [statusFilter, setStatusFilter] = useState("全部狀態");
   const [savingId, setSavingId] = useState("");
+  const [editingId, setEditingId] = useState("");
 
   const owners = useMemo(() => {
-    const names = data.workflowItems.map((item) => item.owner || "未指定");
+    const names = data.workflowItems.flatMap((item) => splitOwners(item.owner));
     return ["全部窗口", ...Array.from(new Set(names))];
   }, [data.workflowItems]);
 
@@ -35,7 +51,7 @@ export function PeopleWorkload() {
 
   const scopedItems = useMemo(() => {
     return data.workflowItems
-      .filter((item) => owner === "全部窗口" || item.owner === owner)
+      .filter((item) => owner === "全部窗口" || splitOwners(item.owner).includes(owner))
       .filter((item) => projectCode === "全部專案" || item.projectCode === projectCode);
   }, [data.workflowItems, owner, projectCode]);
 
@@ -58,6 +74,8 @@ export function PeopleWorkload() {
         return a.dueDate.localeCompare(b.dueDate);
       });
   }, [scopedItems, statusFilter]);
+
+  const phases = data.phases.length > 0 ? data.phases : defaultPhases;
 
   async function updateItem(item: WorkflowItem, patch: Partial<WorkflowItem>) {
     setSavingId(item.id);
@@ -163,74 +181,91 @@ export function PeopleWorkload() {
         </section>
       ) : null}
 
-      <section className="rd-board">
-        {visibleItems.map((item) => {
-          const itemStatusClass = statusClass(item.status);
+      <section className="rd-phase-board">
+        {phases.map((phase) => {
+          const phaseItems = visibleItems.filter((item) => item.phase === phase);
           return (
-            <article className={`rd-task-card status-${itemStatusClass}`} key={item.id}>
+            <article className={`rd-phase-column ${phaseClass(phase)}`} key={phase}>
               <header>
-                <span>{item.projectName}</span>
-                <b className={itemStatusClass}>{item.status}</b>
+                <span>{phase}</span>
+                <strong>{phaseItems.length}</strong>
               </header>
-              <div className={`rd-phase-badge ${itemStatusClass}`}>{item.phase}</div>
-              <h2>{item.title}</h2>
-              <label>
-                研發填報內容
-                <textarea
-                  defaultValue={item.content === "待補內容" ? "" : item.content}
-                  onBlur={(event) => {
-                    if (event.currentTarget.value !== item.content) {
-                      void updateItem(item, { content: event.currentTarget.value });
-                    }
-                  }}
-                  placeholder="寫下目前完成內容、討論結論、測試結果或需要 PM 知道的方向"
-                />
-              </label>
-              <dl>
-                <div>
-                  <dt>階段</dt>
-                  <dd>{item.phase}</dd>
-                </div>
-                <div>
-                  <dt>窗口</dt>
-                  <dd>{item.owner}</dd>
-                </div>
-                <div>
-                  <dt>期限</dt>
-                  <dd>{item.dueDate}</dd>
-                </div>
-                <div>
-                  <dt>文件</dt>
-                  <dd className={item.documentUrl ? "doc-ok" : "doc-missing"}>
-                    {item.documentUrl ? "已有連結" : "缺文件"}
-                  </dd>
-                </div>
-              </dl>
-              <label>
-                文件或 Google 連結
-                <input
-                  defaultValue={item.documentUrl}
-                  onBlur={(event) => {
-                    if (event.currentTarget.value !== item.documentUrl) {
-                      void updateItem(item, { documentUrl: event.currentTarget.value });
-                    }
-                  }}
-                  placeholder="貼上成果文件連結"
-                />
-              </label>
-              <div className="rd-actions">
-                {statuses.map((status) => (
-                  <button
-                    className={status === item.status ? "primary-action" : "secondary-action"}
-                    disabled={savingId === item.id}
-                    key={status}
-                    onClick={() => void updateItem(item, { status })}
-                    type="button"
-                  >
-                    {status}
-                  </button>
-                ))}
-              </div>
+              {phaseItems.length === 0 ? <p className="plain-copy">目前沒有小關</p> : null}
+              {phaseItems.map((item) => {
+                const itemStatusClass = statusClass(item.status);
+                const isEditing = editingId === item.id;
+                return (
+                  <div className={`rd-task-card status-${itemStatusClass}`} key={item.id}>
+                    <header>
+                      <span>{item.projectName}</span>
+                      <b className={itemStatusClass}>{item.status}</b>
+                    </header>
+                    <h2>{item.title}</h2>
+                    <div className="compact-meta">
+                      <span>窗口：{splitOwners(item.owner).join("、") || "未指定"}</span>
+                      <span>期限：{item.dueDate}</span>
+                      <span className={item.documentUrl ? "doc-ok" : "doc-missing"}>
+                        文件：{item.documentUrl ? "已有連結" : "缺文件"}
+                      </span>
+                    </div>
+                    <section className="rd-content-preview">
+                      <span>研發填報內容</span>
+                      <p>{item.content === "待補內容" ? "尚未填寫" : item.content}</p>
+                    </section>
+                    <div className="compact-actions">
+                      {item.documentUrl ? (
+                        <a className="doc-link" href={item.documentUrl} rel="noreferrer" target="_blank">
+                          開啟文件
+                        </a>
+                      ) : null}
+                      <button className="secondary-action" onClick={() => setEditingId(isEditing ? "" : item.id)} type="button">
+                        {isEditing ? "收起" : "編輯"}
+                      </button>
+                    </div>
+                    {isEditing ? (
+                      <div className="rd-edit-panel">
+                        <label>
+                          研發填報內容
+                          <textarea
+                            defaultValue={item.content === "待補內容" ? "" : item.content}
+                            onBlur={(event) => {
+                              if (event.currentTarget.value !== item.content) {
+                                void updateItem(item, { content: event.currentTarget.value });
+                              }
+                            }}
+                            placeholder="寫下目前完成內容、討論結論、測試結果或需要 PM 知道的方向"
+                          />
+                        </label>
+                        <label>
+                          文件或 Google 連結
+                          <input
+                            defaultValue={item.documentUrl}
+                            onBlur={(event) => {
+                              if (event.currentTarget.value !== item.documentUrl) {
+                                void updateItem(item, { documentUrl: event.currentTarget.value });
+                              }
+                            }}
+                            placeholder="貼上成果文件連結"
+                          />
+                        </label>
+                        <div className="rd-actions">
+                          {statuses.map((status) => (
+                            <button
+                              className={status === item.status ? "primary-action" : "secondary-action"}
+                              disabled={savingId === item.id}
+                              key={status}
+                              onClick={() => void updateItem(item, { status })}
+                              type="button"
+                            >
+                              {status}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </article>
           );
         })}

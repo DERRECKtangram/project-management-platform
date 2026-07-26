@@ -283,7 +283,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                   </label>
                   <label>
                     負責窗口
-                    <input name="owner" placeholder="例如 Max" />
+                    <input name="owner" placeholder="例如 Kenny、Max 或 Kenny,Max" />
                   </label>
                   <label>
                     結束日期
@@ -380,7 +380,7 @@ export function ProjectWorkspace({ code }: ProjectWorkspaceProps) {
                           </label>
                           <label>
                             負責窗口
-                            <input name="owner" defaultValue={item.owner} />
+                            <input name="owner" defaultValue={item.owner} placeholder="可用頓號、逗號或換行分隔多人" />
                           </label>
                           <label>
                             期限

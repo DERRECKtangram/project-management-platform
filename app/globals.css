@@ -2113,12 +2113,59 @@ select {
 .rd-actions {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .rd-actions button {
   min-height: 38px;
   padding: 8px 10px;
+}
+
+.rd-phase-board {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(260px, 1fr));
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.rd-phase-column {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-height: 340px;
+  min-width: 260px;
+  padding: 14px;
+}
+
+.rd-phase-column > header {
+  align-items: center;
+  border-bottom: 1px solid rgba(102, 112, 133, 0.16);
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 10px;
+}
+
+.rd-phase-column > header span {
+  color: var(--blue);
+  font-size: 17px;
+  font-weight: 950;
+}
+
+.rd-phase-column > header strong {
+  background: rgba(255, 255, 255, 0.76);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+.phase-proposal .rd-task-card,
+.phase-launch .rd-task-card,
+.phase-midterm .rd-task-card,
+.phase-close .rd-task-card {
+  background: rgba(255, 255, 255, 0.84);
 }
 
 .phase-proposal {
@@ -2185,6 +2232,18 @@ select {
   padding: 10px 12px;
   resize: vertical;
   width: 100%;
+}
+
+.rd-edit-panel {
+  border-top: 1px solid #e8edf4;
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.rd-edit-panel label {
+  display: grid;
+  gap: 6px;
 }
 
 .rd-phase-badge {
